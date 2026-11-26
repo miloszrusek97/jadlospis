@@ -1,0 +1,1997 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2F3B48">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Jadłospis">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Jadłospis i lista zakupów</title>
+<style>
+@font-face{font-family:"Caveat";src:url("fonts/Caveat.ttf") format("truetype");font-weight:400 700;font-display:swap}
+@font-face{font-family:"Signika";src:url("fonts/Signika.ttf") format("truetype");font-weight:300 700;font-display:swap}
+</style>
+<style>
+:root{
+  color-scheme: light;
+  --paper:#F3F5F7; --surface:#FFFFFF; --ink:#1C2632; --muted:#5F6B78; --line:#DCE2E8;
+  --banner:#2F3B48; --banner-ink:#FFFFFF; --pen:#2338A8; --focus:#3B6FD8;
+  --sandra:#1F6CB5; --sandra-soft:#E2EDF9;
+  --milosz:#12826A; --milosz-soft:#DCF1EA;
+  --both-soft:#E6E9EE;
+  --hl:#FFEFAD; --err:#B3261E;
+  --hover:#E6EEF8; --check:#9AA5B1; --warn:#8A5200; --warn-soft:#FFF3DC;
+  --font:"Signika","Segoe UI",system-ui,-apple-system,sans-serif;
+  --hand:"Caveat","Segoe Print","Bradley Hand","Comic Sans MS",cursive;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#141A21; --surface:#1B232C; --ink:#E6ECF2; --muted:#9AA7B4; --line:#2C3743;
+    --banner:#3A4858; --banner-ink:#FFFFFF; --pen:#93A8FF; --focus:#7FA6FF;
+    --sandra:#71A9EE; --sandra-soft:#1B3250;
+    --milosz:#4CC9A2; --milosz-soft:#123B31;
+    --both-soft:#27323E;
+    --hl:#3D3514; --err:#F28B82;
+    --hover:#22303D; --check:#5D6976; --warn:#F2B35A; --warn-soft:#3A2C14;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 6rem)}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.wrap{max-width:1320px;margin:0 auto;padding:2rem 1.5rem 5rem}
+.top h1{font-size:clamp(1.75rem,3vw,2.35rem);font-weight:600;letter-spacing:-.01em;line-height:1.15;margin:0 0 .3rem}
+.top p{margin:0;color:var(--muted);max-width:66ch}
+.top .S{color:var(--sandra);font-weight:500} .top .M{color:var(--milosz);font-weight:500}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:2.5rem;align-items:start;margin-top:1.5rem}
+
+/* filtry */
+.toolbar{position:sticky;top:0;z-index:5;background:var(--paper);padding:.6rem 0 .7rem;display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.tabs{display:flex;flex-wrap:wrap;gap:.15rem}
+.tab{font:inherit;font-weight:500;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:.35rem .6rem;cursor:pointer}
+.tab:hover{color:var(--ink)}
+.tab[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.search{display:flex;flex-wrap:wrap;gap:.6rem .9rem;align-items:center;flex:1 1 100%}
+.search input[type="search"],.search select{font:inherit;padding:.42rem .7rem;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.search input[type="search"]{flex:1 1 220px;max-width:340px}
+.only{display:flex;gap:.4rem;align-items:center;color:var(--muted);white-space:nowrap;font-size:.95rem;cursor:pointer}
+.only input,.toggle-sp input{accent-color:var(--ink)}
+.clear-all{margin-left:auto;padding:.38rem .75rem}
+
+/* sekcje */
+section.type{margin-top:1.75rem}
+.banner{display:flex;align-items:flex-end;border-bottom:2px solid var(--banner);margin:0 0 .15rem}
+.banner h2{margin:0;background:var(--banner);color:var(--banner-ink);font-size:1.05rem;font-weight:500;padding:.38rem 3rem .38rem .9rem;clip-path:polygon(0 0,100% 0,calc(100% - 1.6rem) 100%,0 100%)}
+.banner .cnt{margin-left:auto;color:var(--muted);font-size:.85rem;padding:0 0 .3rem;text-align:right}
+.banner .cnt .sel-n{color:var(--ink);font-weight:500}
+.sec-toggle{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;text-align:left}
+.sec-toggle:focus-visible{outline:2px solid var(--banner-ink);outline-offset:3px}
+.sec-chev{width:.8em;height:.8em;flex:none;transition:transform .2s ease}
+.sec-chev path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sec-toggle[aria-expanded="false"] .sec-chev{transform:rotate(-90deg)}
+section.type.collapsed{margin-top:1rem}
+
+/* wiersz przepisu */
+.meal{display:grid;grid-template-columns:3.6rem minmax(0,1fr) auto;gap:.15rem .8rem;align-items:center;padding:.75rem .25rem .75rem 0;border-bottom:1px solid var(--line)}
+.meal.flash{animation:flash 1.4s ease-out}
+@keyframes flash{from{background:var(--hover)}to{background:transparent}}
+.num{position:relative;width:3.3rem;height:2.8rem;display:grid;place-items:center;font-family:var(--hand);font-weight:700;font-size:1.9rem;color:var(--pen);line-height:1;align-self:start}
+.num span{position:relative;top:-1px}
+.ring{position:absolute;left:-.15rem;top:-.2rem;width:calc(100% + .3rem);height:calc(100% + .4rem);overflow:visible;pointer-events:none}
+.ring path{fill:none;stroke:var(--ink);stroke-width:2.1;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .4s ease-out}
+.meal.who-S .ring path{stroke:var(--sandra)}
+.meal.who-M .ring path{stroke:var(--milosz)}
+.meal.who-S .ring path,.meal.who-M .ring path,.meal.who-B .ring path{stroke-dashoffset:0}
+.body h3{margin:0;font-size:1rem;font-weight:500}
+.title{font:inherit;font-weight:500;font-size:1.02rem;line-height:1.35;color:var(--ink);background:none;border:0;padding:0;text-align:left;cursor:pointer}
+.title:hover{color:var(--focus)}
+.chev{display:inline-block;width:.7em;height:.7em;margin-left:.35em;vertical-align:.05em;transition:transform .2s ease}
+.chev path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.title[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.people{margin:.3rem 0 0;display:grid;gap:.12rem}
+.pl{margin:0;display:flex;flex-wrap:wrap;gap:.05rem .75rem;font-size:.86rem;color:var(--muted);align-items:baseline}
+.pl .who{font-weight:600;min-width:3.4rem}
+.pl .who.S{color:var(--sandra)} .pl .who.M{color:var(--milosz)}
+.pl .kcal{color:var(--ink);font-weight:500}
+.pl abbr{text-decoration:none}
+.pl .serv{color:var(--ink)}
+.pl .extra{color:var(--ink);font-style:italic}
+
+.pick{display:flex;gap:.3rem;align-self:center}
+.pk{font:inherit;font-size:.84rem;font-weight:500;display:inline-flex;align-items:center;gap:.38rem;padding:.32rem .65rem;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap}
+.pk:hover:not(:disabled){border-color:var(--muted)}
+.pk:disabled{opacity:.32;cursor:default}
+.dot{display:inline-block;width:.55rem;height:.55rem;border-radius:50%;flex:none}
+.dot.S{background:var(--sandra)} .dot.M{background:var(--milosz)}
+.dots{display:inline-flex;align-items:center}
+.dots .dot+.dot{margin-left:-.2rem;box-shadow:0 0 0 1.5px var(--surface)}
+.pk[data-who="S"][aria-pressed="true"]{background:var(--sandra-soft);border-color:var(--sandra)}
+.pk[data-who="M"][aria-pressed="true"]{background:var(--milosz-soft);border-color:var(--milosz)}
+.pk[data-who="B"][aria-pressed="true"]{background:var(--both-soft);border-color:var(--ink)}
+
+.days{grid-column:2/-1;display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;margin-top:.5rem}
+.dlab{font-size:.8rem;color:var(--muted);margin-right:.25rem}
+.dy{font:inherit;font-size:.8rem;font-weight:500;min-width:2.25rem;padding:.24rem .4rem;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.dy:hover{color:var(--ink);border-color:var(--muted)}
+.dy[aria-pressed="true"]{color:var(--paper);background:var(--ink);border-color:var(--ink)}
+.meal.who-S .dy[aria-pressed="true"]{background:var(--sandra);border-color:var(--sandra)}
+.meal.who-M .dy[aria-pressed="true"]{background:var(--milosz);border-color:var(--milosz)}
+.freq{font-size:.8rem;color:var(--muted);margin-left:.35rem}
+.clear-one{font:inherit;font-size:.8rem;color:var(--muted);background:none;border:0;padding:.2rem .1rem;margin-left:auto;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+.clear-one:hover{color:var(--ink)}
+.detail{grid-column:2/-1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1rem 2rem;padding:.75rem 0 .35rem}
+.detail h4{font-size:.88rem;font-weight:600;margin:0 0 .3rem}
+.note{font-size:.84rem;margin:0 0 .4rem;color:var(--muted)}
+.warn{font-size:.84rem;margin:0 0 .5rem;padding:.45rem .6rem;border-radius:6px;background:var(--warn-soft);color:var(--warn)}
+table.ing{width:100%;border-collapse:collapse;font-size:.9rem}
+.ing th{font-size:.82rem;font-weight:600;text-align:right;padding:0 0 .25rem .75rem}
+.ing th.S{color:var(--sandra)} .ing th.M{color:var(--milosz)}
+.ing td{padding:.22rem 0;border-bottom:1px dashed var(--line);vertical-align:top}
+.ing td.v{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;padding-left:.75rem}
+.ing td.v small{display:block;color:var(--muted);font-size:.74rem;line-height:1.25}
+.ing td.none{color:var(--check)}
+.recipe p{margin:0 0 .5rem;font-size:.92rem;line-height:1.55;max-width:62ch}
+.recipe b{font-weight:600}
+.recipe b.M{color:var(--milosz)} .recipe b.S{color:var(--sandra)}
+.noresults{color:var(--muted);margin:2rem 0}
+
+/* panel z listą */
+.panel{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.25rem 1.25rem 1rem}
+.panel h2{margin:0;font-size:1.35rem;font-weight:600}
+.sum{margin:.2rem 0 0;color:var(--muted);font-size:.92rem}
+.sum .S{color:var(--sandra);font-weight:500} .sum .M{color:var(--milosz);font-weight:500}
+.plan{display:grid;gap:.35rem;margin:.75rem 0 0}
+.plan-row{display:grid;grid-template-columns:4.6rem minmax(0,1fr);gap:.5rem;align-items:center}
+.plan-row.nolabel{grid-template-columns:1fr}
+.plan-day{font-size:.82rem;font-weight:500;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:.35rem}
+.chip{display:inline-flex;align-items:center;gap:.3rem;border:1.5px solid var(--line);background:none;border-radius:999px;padding:0 .55rem .05rem;cursor:pointer;color:var(--pen);font-family:var(--hand);font-weight:700;font-size:1.3rem;line-height:1.35}
+.chip.who-S{border-color:var(--sandra)} .chip.who-M{border-color:var(--milosz)} .chip.who-B{border-color:var(--ink)}
+.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 .4rem}
+.btn{font:inherit;font-size:.92rem;font-weight:500;padding:.45rem .85rem;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn.primary{background:var(--banner);border-color:var(--banner);color:var(--banner-ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.toggle-sp{display:flex;align-items:center;gap:.45rem;font-size:.92rem;color:var(--muted);margin:.3rem 0 .25rem;cursor:pointer}
+.grp h3{font-size:.95rem;font-weight:600;color:var(--ink);margin:1.1rem 0 .2rem;padding-bottom:.2rem;border-bottom:1px solid var(--line)}
+.grp ul{list-style:none;margin:0;padding:0}
+.it{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:0 .5rem;padding:.18rem 0}
+.it label{display:grid;grid-template-columns:1.1rem minmax(0,1fr) auto;gap:.55rem;align-items:baseline;cursor:pointer}
+.it input{accent-color:var(--ink);margin:0;transform:translateY(2px)}
+.qty{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.it.done .name,.it.done .qty{color:var(--check);text-decoration:line-through}
+.when{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.3rem;margin:.2rem 0 .15rem 1.65rem}
+.dchip{display:inline-flex;align-items:center;gap:.3rem;font-size:.76rem;line-height:1;padding:.15rem .15rem .15rem .4rem;border-radius:5px;background:var(--both-soft);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dchip b{font-weight:600}
+.it.done .dchip{opacity:.5}
+.dchip.late{background:var(--warn-soft);color:var(--warn)}
+.dchip.on{background:var(--ink);color:var(--paper)}
+.dchip.on.late{background:var(--warn);color:var(--paper)}
+.mv{display:inline-grid;place-items:center;width:1.3rem;height:1.3rem;border:0;border-radius:4px;background:transparent;color:inherit;opacity:.7;cursor:pointer;padding:0}
+.mv:hover{opacity:1;background:var(--surface);color:var(--ink)}
+.mv svg{width:.75rem;height:.75rem;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.lists{display:flex;gap:.25rem;margin:1rem 0 0;border-bottom:1px solid var(--line)}
+.lt{font:inherit;font-size:.95rem;font-weight:500;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:.35rem .55rem;color:var(--muted);cursor:pointer}
+.lt:hover{color:var(--ink)}
+.lt[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.lt .n{font-size:.78rem;font-weight:400;color:var(--muted);margin-left:.15rem}
+.trip{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .9rem;font-size:.88rem;color:var(--muted);margin:.6rem 0 0}
+.trip label{display:flex;align-items:center;gap:.45rem}
+.trip select{font:inherit;font-size:.88rem;padding:.25rem .4rem;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+#list.filtering .it{opacity:.4;transition:opacity .15s}
+#list.filtering .it.hit{opacity:1;background:var(--hl);margin:.1rem -.45rem;padding:.25rem .45rem;border-radius:6px}
+#list.filtering .grp.nohit h3{opacity:.4}
+.qty small{display:block;font-size:.72rem;font-weight:400;color:var(--muted);text-align:right;line-height:1.2}
+.dayfilter{margin:.6rem 0 .1rem}
+.dayfilter summary{display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;list-style:none;font-size:.9rem;padding:.4rem .7rem;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--muted)}
+.dayfilter summary::-webkit-details-marker{display:none}
+.dayfilter summary::after{content:"";width:.4rem;height:.4rem;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:translateY(-2px) rotate(45deg);margin-left:.25rem}
+.dayfilter[open] summary::after{transform:translateY(1px) rotate(-135deg)}
+.dayfilter summary b{color:var(--ink);font-weight:600}
+.dayfilter.active summary{background:var(--hl);border-color:var(--ink)}
+.dmenu{display:grid;grid-template-columns:1fr 1fr;gap:.1rem .9rem;margin-top:.4rem;padding:.55rem .75rem;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:.9rem}
+.dmenu label{display:flex;align-items:center;gap:.45rem;padding:.18rem 0;cursor:pointer}
+.dmenu label.none{color:var(--check)}
+.dmenu .n{color:var(--muted);font-size:.8rem}
+.dmenu input{accent-color:var(--ink);margin:0}
+.dmenu .linkbtn{grid-column:1/-1;justify-self:start;margin-top:.35rem}
+.linkbtn{font:inherit;font-size:.85rem;background:none;border:0;padding:0;color:var(--ink);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.src .mt b{font-weight:600;color:var(--ink)}
+.why{font:inherit;font-size:.78rem;color:var(--muted);background:none;border:0;cursor:pointer;padding:0 .1rem;text-decoration:underline dotted;text-underline-offset:2px}
+.why:hover{color:var(--ink)}
+.src{grid-column:1/-1;margin:.1rem 0 .45rem 1.65rem;padding:0;list-style:none;font-size:.8rem;color:var(--muted)}
+.src li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;padding:.05rem 0}
+.src .mt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src .sq{white-space:nowrap;display:inline-flex;align-items:center;gap:.3rem}
+.empty{color:var(--muted);font-size:.95rem;margin:1rem 0 .5rem}
+.foot{font-size:.8rem;color:var(--muted);margin:1.1rem 0 0;border-top:1px solid var(--line);padding-top:.75rem}
+.foot p{margin:0 0 .4rem}
+.print-meals{display:none}
+.top{position:relative}
+.add-btn{float:right;margin:.35rem 0 .75rem 1rem}
+.pl .own{font-size:.75rem;padding:0 .35rem;border-radius:4px;background:var(--both-soft);color:var(--ink)}
+.dlg{width:min(940px,calc(100vw - 1.5rem));max-height:calc(100vh - 1.5rem);padding:0;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);overflow:auto}
+.dlg::backdrop{background:rgba(10,20,32,.5)}
+.dlg-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.9rem 1.25rem;background:var(--paper);border-bottom:1px solid var(--line)}
+.dlg-head h2{margin:0;font-size:1.3rem;font-weight:600}
+.x{font:inherit;font-size:1.5rem;line-height:1;width:2.2rem;height:2.2rem;border-radius:8px;border:1px solid transparent;background:none;color:var(--muted);cursor:pointer}
+.x:hover{border-color:var(--line);color:var(--ink)}
+.dlg-body{padding:1rem 1.25rem 1.5rem}
+.dlg-lead{margin:0 0 1rem;color:var(--muted);max-width:70ch}
+.dlg h3{font-size:1.05rem;font-weight:600;margin:1.6rem 0 .3rem}
+.who-row{border:0;padding:0;margin:0 0 .8rem;display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;align-items:center}
+.who-row legend{float:left;margin-right:.6rem;color:var(--muted);font-size:.92rem}
+.who-row label{display:flex;align-items:center;gap:.35rem;cursor:pointer}
+.who-row .S{color:var(--sandra);font-weight:600} .who-row .M{color:var(--milosz);font-weight:600}
+.who-row input{accent-color:var(--ink)}
+.drop{position:relative;display:grid;justify-items:center;gap:.25rem;padding:1.6rem 1rem;border:1.5px dashed var(--muted);border-radius:12px;background:var(--surface);text-align:center;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--ink);background:var(--hover)}
+.drop:focus-within{outline:2px solid var(--focus);outline-offset:2px}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop-main{font-weight:500}
+.filelist{list-style:none;margin:.5rem 0 0;padding:0;display:grid;gap:.25rem}
+.filelist li{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.3rem .6rem;border-radius:8px;background:var(--surface);border:1px solid var(--line);font-size:.92rem}
+.rm{font:inherit;font-size:1.1rem;line-height:1;width:1.8rem;height:1.8rem;border-radius:6px;border:1px solid transparent;background:none;color:var(--muted);cursor:pointer;flex:none}
+.rm:hover{border-color:var(--line);color:var(--ink)}
+#srcText,.rc textarea{width:100%;font:inherit;font-size:.95rem;padding:.55rem .7rem;margin-top:.75rem;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical}
+.row-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin-top:.75rem}
+.ai-status{min-height:1.2em;margin:.6rem 0 0;font-size:.92rem;color:var(--ink)}
+.ai-status.err{color:var(--err)}
+.api{margin-top:1rem;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.api summary{cursor:pointer;padding:.55rem .8rem;font-weight:500}
+.api-body{padding:0 .8rem .8rem;display:grid;gap:.6rem}
+.api-body label{display:grid;gap:.25rem;font-size:.9rem;color:var(--muted)}
+.api-body input{font:inherit;padding:.45rem .6rem;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+.rc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem;margin:.8rem 0}
+.rc-top{display:flex;flex-wrap:wrap;gap:.5rem}
+.rc select,.rc input{font:inherit;font-size:.92rem;padding:.38rem .5rem;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);min-width:0}
+.rc select:disabled{opacity:.6}
+.rc-title{flex:1 1 280px;font-weight:600}
+.rc-meta{display:flex;flex-wrap:wrap;gap:.5rem .9rem;margin-top:.7rem}
+.rc-meta label,.rc-target{display:flex;align-items:center;gap:.4rem;font-size:.88rem;color:var(--muted)}
+.rc-meta input{width:5rem}
+.rc-target{margin-top:.7rem}
+.rc-target select{max-width:min(36rem,100%)}
+.rc-hint{margin:.3rem 0 .6rem}
+.rc-scroll{overflow-x:auto}
+.rc-ing{width:100%;border-collapse:collapse;font-size:.9rem;min-width:560px}
+.rc-ing th{text-align:left;font-size:.8rem;font-weight:500;color:var(--muted);padding:0 .3rem .25rem}
+.rc-ing td{padding:.15rem .3rem}
+.rc-ing td:nth-child(1) input{width:100%}
+.rc-ing td:nth-child(2) input{width:4.5rem;text-align:right}
+.rc-ing td:nth-child(3) input{width:100%}
+.rc-ing td:nth-child(4) select{width:100%}
+.rc-ing td:nth-child(1){width:34%} .rc-ing td:nth-child(3){width:24%} .rc-ing td:nth-child(4){width:24%}
+.rc-rec{display:block;margin-top:.8rem;font-size:.88rem;color:var(--muted)}
+.rc-rec textarea{margin-top:.3rem}
+.rc-err{min-height:0;margin:.4rem 0 0;color:var(--err);font-size:.9rem}
+.rc-err:empty{display:none}
+.rc-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin-top:.8rem}
+.mine ul{list-style:none;margin:.3rem 0 0;padding:0;display:grid;gap:.2rem}
+.mine li{display:flex;justify-content:space-between;align-items:center;gap:.75rem;padding:.3rem 0;border-bottom:1px dashed var(--line);font-size:.92rem}
+.who-tag{font-size:.78rem;font-weight:600;margin-left:.3rem}
+.who-tag.S{color:var(--sandra)} .who-tag.M{color:var(--milosz)}
+.file-btn{position:relative;overflow:hidden}
+.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+@media (max-width:640px){ .add-btn{float:none;margin:0 0 .8rem} }
+.undo{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(1rem + env(safe-area-inset-bottom,0px));z-index:20;display:flex;align-items:center;gap:.9rem;background:var(--banner);color:var(--banner-ink);font-size:.92rem;padding:.5rem .55rem .5rem 1rem;border-radius:10px;box-shadow:0 6px 18px rgba(15,30,50,.3);white-space:nowrap}
+.undo .btn{background:transparent;color:var(--banner-ink);border-color:rgba(255,255,255,.55);padding:.3rem .75rem}
+.undo .btn:hover{border-color:var(--banner-ink)}
+.fab{display:none}
+
+@media (max-width:1100px){
+  .meal{grid-template-columns:3.6rem minmax(0,1fr)}
+  .pick{grid-column:2/-1;margin-top:.45rem;flex-wrap:wrap}
+  .clear-all{margin-left:0}
+}
+@media (max-width:960px){
+  .layout{grid-template-columns:1fr}
+  .panel{position:static;max-height:none}
+  .undo{bottom:calc(4.6rem + env(safe-area-inset-bottom,0px))}
+  .fab{position:fixed;right:1rem;bottom:calc(1rem + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:.4rem;background:var(--banner);color:var(--banner-ink);text-decoration:none;font-weight:500;padding:.65rem 1.05rem;border-radius:999px;box-shadow:0 6px 18px rgba(15,30,50,.28);z-index:10}
+}
+@media (max-width:640px){
+  .wrap{padding:1.25rem 1rem 5rem}
+  .meal{grid-template-columns:2.9rem minmax(0,1fr);gap:.15rem .55rem}
+  .num{width:2.7rem;font-size:1.65rem}
+  .detail{grid-column:1/-1;grid-template-columns:1fr}
+  .search input[type="search"]{max-width:none;flex-basis:100%}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+@media print{
+  :root{--ink:#000;--muted:#444;--line:#bbb;--banner:#000;--check:#888}
+  body{background:#fff}
+  .top,.meals,.fab,.undo,.dlg,.dayfilter,.lists,.trip,.mv,.actions,.toggle-sp,.why,.src,.plan,.foot{display:none!important}
+  .dchip{background:none;border:1px solid #999;padding-right:.4rem}
+  .wrap{padding:0}
+  .layout{display:block;margin:0}
+  .panel{position:static;border:0;padding:0;max-height:none;overflow:visible}
+  .print-meals{display:block;font-size:.85rem;margin:.3rem 0 0}
+  .grp{break-inside:avoid}
+  #list.filtering .it:not(.hit),#list.filtering .grp.nohit{display:none!important}
+  #list.filtering .it.hit{background:none!important;margin:0!important;padding:.18rem 0!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <button class="btn add-btn" type="button" data-a="open">Dodaj przepisy</button>
+    <h1>Jadłospis i lista zakupów</h1>
+    <p id="lead">Przy każdym przepisie zaznacz, kto go je, i wybierz dni tygodnia. Produkty z wybranych przepisów, w gramaturach z jadłospisu każdej osoby, zsumują się w liście zakupów razem z dniami, w które będą potrzebne.</p>
+  </header>
+
+  <div class="layout">
+    <main class="meals">
+      <div class="toolbar">
+        <div class="tabs" role="group" aria-label="Rodzaj posiłku">
+          <button class="tab" type="button" data-act="type" data-type="all">Wszystkie</button>
+          <button class="tab" type="button" data-act="type" data-type="S">Śniadanie</button>
+          <button class="tab" type="button" data-act="type" data-type="D">II śniadanie</button>
+          <button class="tab" type="button" data-act="type" data-type="O">Obiad</button>
+          <button class="tab" type="button" data-act="type" data-type="K">Kolacja</button>
+        </div>
+        <div class="search">
+          <label class="sr" for="q">Szukaj przepisu lub składnika</label>
+          <input id="q" type="search" placeholder="Szukaj, np. kurczak, twaróg, 17" autocomplete="off">
+          <label class="sr" for="whoFilter">Czyje przepisy pokazać</label>
+          <select id="whoFilter"></select>
+          <label class="only"><input type="checkbox" id="onlySel"> Tylko wybrane</label>
+          <button class="btn clear-all" type="button" data-act="clear" id="clearTop">Wyczyść wszystko</button>
+        </div>
+      </div>
+      <div id="sections"></div>
+      <p class="noresults" id="noResults" hidden></p>
+    </main>
+
+    <aside class="panel" id="lista" aria-labelledby="listaTitle">
+      <h2 id="listaTitle">Lista zakupów</h2>
+      <p class="sum" id="sum" aria-live="polite"></p>
+      <p class="print-meals" id="printMeals"></p>
+      <div class="plan" id="plan"></div>
+      <div class="lists" id="lists" role="group" aria-label="Listy zakupów" hidden></div>
+      <div class="trip" id="trip" hidden>
+        <label>Dzień zakupów <select id="tripDay"></select></label>
+        <button class="linkbtn" type="button" data-act="bulk" id="bulk" hidden></button>
+      </div>
+      <div class="actions">
+        <button class="btn primary" type="button" data-act="copy" id="copyBtn">Kopiuj listę</button>
+        <button class="btn" type="button" data-act="share" id="shareBtn" hidden>Udostępnij</button>
+        <button class="btn" type="button" data-act="print" id="printBtn">Drukuj</button>
+        <button class="btn" type="button" data-act="clear" id="clearBtn">Wyczyść</button>
+      </div>
+      <details class="dayfilter" id="dayFilter" hidden>
+        <summary>Podświetl produkty na: <b id="dayFilterLabel">wszystkie</b></summary>
+        <div class="dmenu" id="dayMenu" role="group" aria-label="Dni, na które podświetlić produkty"></div>
+      </details>
+      <label class="toggle-sp"><input type="checkbox" id="spices"> <span id="spicesLabel">Pokaż przyprawy</span></label>
+      <div id="list"></div>
+      <div class="foot">
+        <p>Każdy zaznaczony dzień to jedna porcja, więc posiłek na dwa dni liczy się podwójnie. Posiłek bez dnia liczy się raz.</p>
+        <p>Jeśli przepis wybiera jedna osoba, liczony jest jej przepis z jej gramaturą. Przy „Obydwoje” sumują się oba przepisy.</p>
+        <p>Przepisy na kilka porcji (grochówka, burgery, placuszki, sałatka z selerem, zapiekany camembert) liczone są w całości, a kolejny garnek dopiero wtedy, gdy poprzedni się skończy. Dni przy ich produktach to dni gotowania. Grochówkę, burgery i sałatkę z selerem przy „Obydwoje” liczę jako jeden wspólny przepis z większą z dwóch gramatur.</p>
+        <p>Przy każdym produkcie widać, ile go potrzeba na który dzień. Strzałka przy dniu przenosi tę część na drugą listę zakupów i z powrotem. Gdy ustawisz dzień zakupów, produkty potrzebne wcześniej niż te zakupy zostaną wyróżnione na pomarańczowo.</p>
+        <p>Filtr dni podświetla na otwartej liście produkty potrzebne w wybrane dni i pokazuje ich ilość na te dni. Kopiowanie i drukowanie obejmują wtedy tylko podświetlone produkty.</p>
+        <p>Jajka podane w sztukach. Białka i żółtka z przepisów liczone są jako całe jajka.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+<div class="undo" id="undo" role="status" hidden><span id="undoMsg"></span><button class="btn" type="button" data-act="undo">Cofnij</button></div>
+<dialog class="dlg" id="addDlg" aria-labelledby="dlgTitle">
+  <div class="dlg-head">
+    <h2 id="dlgTitle">Dodaj przepisy</h2>
+    <button type="button" class="x" data-a="close" aria-label="Zamknij">×</button>
+  </div>
+  <div class="dlg-body">
+    <p class="dlg-lead">Wrzuć zdjęcie strony z jadłospisu, PDF albo wklej tekst. Claude odczyta przepisy, a Ty sprawdzisz je i zapiszesz. Przepis możesz też wpisać ręcznie.</p>
+    <fieldset class="who-row"><legend>Czyj to jadłospis</legend>
+      <label><input type="radio" name="srcWho" value="S" checked> <span class="S" id="whoS"></span></label>
+      <label><input type="radio" name="srcWho" value="M"> <span class="M" id="whoM"></span></label>
+    </fieldset>
+    <label class="drop" id="drop">
+      <input type="file" id="files" multiple accept="image/*,application/pdf,text/plain,.txt,.md">
+      <span class="drop-main">Przeciągnij pliki tutaj albo kliknij, żeby wybrać</span>
+      <span class="note">Zdjęcia, PDF i pliki tekstowe. Zdjęcie możesz też wkleić skrótem Ctrl+V.</span>
+    </label>
+    <ul class="filelist" id="fileList"></ul>
+    <label class="sr" for="srcText">Tekst przepisu</label>
+    <textarea id="srcText" rows="3" placeholder="Albo wklej tutaj tekst przepisu"></textarea>
+    <div class="row-actions">
+      <button type="button" class="btn primary" id="readBtn" data-a="read">Odczytaj przepisy</button>
+      <button type="button" class="btn" data-a="manual">Wpisz ręcznie</button>
+    </div>
+    <p class="ai-status" id="aiStatus" role="status" aria-live="polite"></p>
+    <details class="api" id="apiBox">
+      <summary>Ustawienia odczytu</summary>
+      <div class="api-body">
+        <p class="note">Przepisy odczytuje Claude przez API Anthropic, więc potrzebny jest Twój klucz API z Claude Platform. Klucz zapisuje się tylko w tej przeglądarce na tym komputerze i jest wysyłany wyłącznie do api.anthropic.com. Każdy odczyt jest rozliczany według cennika API.</p>
+        <label>Klucz API <input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
+        <label>Model <input id="apiModel" spellcheck="false"></label>
+        <div class="row-actions"><button type="button" class="btn" data-a="apisave">Zapisz ustawienia</button><button type="button" class="linkbtn" data-a="apiforget">Usuń klucz</button></div>
+      </div>
+    </details>
+    <section class="review" id="review" hidden>
+      <h3>Do sprawdzenia (<span id="reviewCount">0</span>)</h3>
+      <p class="note">Porównaj z oryginałem, popraw, co trzeba, i zapisz. Nowe produkty trafią na listę zakupów do wybranego działu sklepu.</p>
+      <div id="cards"></div>
+      <button type="button" class="btn primary" id="saveAll" data-a="saveall" hidden>Zapisz wszystkie</button>
+    </section>
+    <section class="mine">
+      <h3>Dodane przez Ciebie (<span id="mineCount">0</span>)</h3>
+      <ul id="mineList"></ul>
+      <div class="row-actions">
+        <button type="button" class="btn" id="exportBtn" data-a="export">Eksportuj do pliku</button>
+        <label class="btn file-btn">Importuj z pliku<input type="file" id="importFile" accept="application/json,.json"></label>
+      </div>
+      <p class="note">Dodane przepisy zapisują się w tej przeglądarce. Eksport to kopia zapasowa, którą możesz też wczytać na innym komputerze.</p>
+    </section>
+  </div>
+</dialog>
+<datalist id="prodList"></datalist>
+<a class="fab" id="fab" href="#lista" hidden>Lista zakupów <span id="fabN"></span></a>
+
+<script>
+/* =====================================================================
+   DANE START
+   ===================================================================== */
+const PEOPLE = {
+  S: { name: "Sandra", gen: "Sandry" },
+  M: { name: "Miłosz", gen: "Miłosza" }
+};
+const CATS = [
+  ["veg","Warzywa i owoce"],
+  ["bread","Pieczywo"],
+  ["meat","Mięso"],
+  ["cold","Wędliny i kiełbasy"],
+  ["dairy","Nabiał i jajka"],
+  ["frozen","Mrożonki"],
+  ["jar","Słoiki, puszki i gotowe produkty"],
+  ["dry","Kasze, makarony, ziarna i orzechy"],
+  ["oil","Oleje, sosy i octy"],
+  ["spice","Przyprawy"],
+  ["home","Do przygotowania w domu"],
+  ["other","Inne"]
+];
+const CATALOG_SRC = {
+  veg:["Ziemniaki","Marchew","Pietruszka (korzeń)","Seler korzeniowy","Buraki","Cebula","Czosnek","Por","Papryka czerwona","Papryka żółta","Pomidory","Pomidorki koktajlowe","Ogórek zielony","Cukinia","Brokuł","Kalafior","Fasolka szparagowa","Kapusta biała","Kapusta włoska","Kapusta pekińska","Pieczarki","Rzodkiewki","Mix sałat","Sałata zielona","Sałata rzymska","Sałata lodowa","Rukola","Roszponka","Kiełki rzodkiewki","Szczypiorek","Natka pietruszki","Koperek","Bazylia świeża","Cytryna (sok)","Pomarańcza","Mandarynki","Borówki amerykańskie"],
+  bread:["Chleb żytni razowy","Chleb graham","Chleb orkiszowy 100%","Bułki grahamki","Bagietka pełnoziarnista","Tortilla pełnoziarnista","Pieczywo chrupkie Wasa Delikatess"],
+  meat:["Pierś z kurczaka","Udka z kurczaka bez skóry","Pierś z indyka","Mięso mielone z indyka","Mięso mielone wołowe","Rostbef wołowy","Schab bez kości","Polędwiczka wieprzowa"],
+  cold:["Szynka wiejska","Szynka chłopska","Szynka prasowana","Indyk z Bobrownik (wędlina)","Parówki z szynki","Frankfurterki z indyka","Kabanosy z kurczaka","Kiełbasa lisiecka drobiowa","Kiełbasa z piersi kurczaka (Morliny)","Kiełbasa zwyczajna czernichowska","Boczek wędzony surowy"],
+  dairy:["Jajka","Masło","Mleko 1,5%","Maślanka naturalna","Jogurt naturalny 2%","Jogurt naturalny pitny 2%","Jogurt grecki","Skyr naturalny Piątnica","Śmietana 12%","Twaróg półtłusty","Twaróg solankowy z czosnkiem (Jana / Biedronka)","Serek wiejski ziarnisty","Serek Almette","Ser żółty","Parmezan","Camembert","Mozzarella","Mozzarella light","Ser typu feta","Ser sałatkowy Kortos NaTurek"],
+  frozen:["Warzywa chińskie (mrożone)","Warzywa na patelnię (mrożone)","Warzywa na patelnię z przyprawą włoską (Hortex)","Groszek zielony mrożony","Bób mrożony","Uszka z mięsem"],
+  jar:["Ogórki kiszone","Ogórki konserwowe","Kapusta kiszona","Pieczarki marynowane","Chrzan","Pasta Wawrzyniec z grillowanym bakłażanem","Groszek konserwowy","Kukurydza konserwowa","Seler konserwowy (Rolnik Wyborny)","Pomidory krojone z puszki","Passata pomidorowa","Przecier pomidorowy Podravka (karton)","Pomidory suszone","Kapary","Makrela w sosie pomidorowym","Sałatka szwedzka Motyl","Surówka Colesław (Vital Fresh)","Sos słodko-kwaśny Łowicz","Żurawina do mięs i serów","Zakwas na żurek","Barszcz czerwony (np. Krakus)","Miód"],
+  dry:["Groch suchy","Ryż czarny (Targroch)","Kasza pęczak","Kasza gryczana","Kasza gryczana biała (Sante)","Makaron pełnoziarnisty","Mąka orkiszowa jasna","Mąka ziemniaczana","Bułka tarta","Żelatyna","Proszek do pieczenia","Pestki dyni","Słonecznik łuskany","Sezam","Orzechy włoskie","Orzechy nerkowca","Mieszanka orzechów (Bakalland)","Pistacje"],
+  oil:["Oliwa z oliwek","Olej lniany","Olej rzepakowy","Majonez Winiary Light","Musztarda","Ketchup","Ocet balsamiczny","Ocet jabłkowy"],
+  spice:["Sól","Sól morska","Pieprz czarny mielony","Pieprz cayenne","Papryka słodka mielona","Papryka chili mielona","Kurkuma","Zioła prowansalskie","Oregano suszone","Tymianek suszony","Majeranek","Liść laurowy","Ziele angielskie","Przyprawa gyros"],
+  home:["Zupa domowa (np. krupnik)","Surówka domowa"],
+  skip:["Woda"]
+};
+/* Produkty liczone w sztukach: waga jednej sztuki w gramach.
+   Składnik może podać liczbę sztuk wprost jako 4. element. */
+const PIECES = { "Jajka": 60 };
+const TYPES = { S:"Śniadanie", D:"II śniadanie", O:"Obiad", K:"Kolacja" };
+/* Przepisy na kilka porcji, które przy „Obydwoje” gotuje się raz, w jednym garnku. */
+const SHARED = [17, 47, 58];
+
+/* ---------- Jadłospis Sandry ----------
+   n: numer z jadłospisu, c: rodzaj, t: nazwa, e/b/f/w: kcal, białko, tłuszcz, węglowodany,
+   p: czas przygotowania (min), s: liczba porcji w przepisie,
+   i: [produkt, gramy, miara domowa, (opcjonalnie sztuki)], r: przygotowanie */
+const MEALS_S = [
+{n:1,c:"S",t:"Jajka sadzone, kanapka z pastą Wawrzyniec, porcja pietruszki i marchewki",e:358,b:19.1,f:21.2,w:27.9,
+ i:[["Jajka",120,"2 średnie sztuki"],["Masło",5,"1 łyżeczka"],["Chleb żytni razowy",35,"1 kromka"],["Pasta Wawrzyniec z grillowanym bakłażanem",25,"1 łyżka"],["Pietruszka (korzeń)",40,"0,5 sztuki"],["Marchew",40,"0,9 sztuki"]],
+ r:"Jajka usmaż na maśle. Pieczywo posmaruj pastą warzywną. Zjedz jaja i kanapkę z pastą. Do posiłku zjedz porcję pietruszki i marchewki."},
+{n:2,c:"S",t:"Serek wiejski z oliwą i papryką, pieczywo żytnie",e:347,b:25.3,f:16,w:28.5,p:10,
+ i:[["Serek wiejski ziarnisty",200,"1 duży kubek"],["Oliwa z oliwek",5,"1 łyżeczka"],["Papryka czerwona",100,"0,4 dużej sztuki"],["Chleb żytni razowy",35,"1 kromka"]],
+ r:"Paprykę drobno pokrój, wymieszaj z serkiem, oliwą i przyprawami. Zjedz z jedną kromką razowego chleba."},
+{n:3,c:"S",t:"Jajecznica na maśle, kanapka z almette i pomidorem",e:355,b:19.5,f:22.4,w:21.9,p:10,
+ i:[["Jajka",120,"2 średnie sztuki"],["Masło",5,"1 łyżeczka"],["Chleb żytni razowy",35,"1 kromka"],["Serek Almette",30,"3 łyżeczki"],["Pomidory",40,"2 plastry"]],
+ r:"Usmaż jajecznicę na maśle. Pieczywo posmaruj serkiem typu Almette i obłóż pomidorem."},
+{n:4,c:"S",t:"Omlet z pieczarkami i parmezanem, mix sałat z pomidorem i olejem lnianym",e:340,b:24,f:24.6,w:9,
+ i:[["Pieczarki",120,"6 małych sztuk"],["Jajka",120,"2 średnie sztuki"],["Mix sałat",40,"2 garście"],["Masło",5,"1 łyżeczka"],["Parmezan",10,"2 łyżeczki"],["Olej lniany",5,"1 łyżeczka"],["Pomidory",130,"1 średnia sztuka"]],
+ r:"Jaja wybij do miseczki i lekko ubij. W międzyczasie na patelni rozgrzej masło. Do roztrzepanych jajek dodaj przyprawy, starte pieczarki oraz starty parmezan (lub inny tarty ser) i wymieszaj. Całą masę wylej na patelnię, przykryj pokrywką i pozostaw do ścięcia (na małym ogniu, około 5 minut). Następnie przewróć omlet na drugą stronę i potrzymaj jeszcze dwie minutki pod przykryciem. Pomidora pokrój w łódeczki i połóż na mixie sałat. Skrop olejem lnianym. Omlet zjedz z sałatą."},
+{n:5,c:"S",t:"Parówki z szynki, chrzan, kiszony ogórek, pieczywo z masłem",e:347,b:14.8,f:23.2,w:23.5,
+ i:[["Parówki z szynki",80,"2 sztuki"],["Ogórki kiszone",100,"2 sztuki"],["Chleb żytni razowy",35,"1 kromka"],["Masło",3,"0,5 łyżeczki"],["Chrzan",10,"1 łyżeczka"],["Sałata zielona",5,"1 liść"]],
+ r:"Parówki podgrzej w wodzie, przełóż na talerz. Obok parówek ułóż pokrojone kiszone ogórki oraz porcję chrzanu. Zjedz z pieczywem posmarowanym cienko masłem i obłożonym liśćmi sałaty."},
+{n:6,c:"S",t:"Pasta jajeczna z odrobiną majonezu, porcja papryki, pieczywo",e:356,b:19.9,f:19.8,w:29.1,p:5,
+ i:[["Jajka",120,"2 średnie sztuki"],["Jogurt naturalny 2%",20,"2 łyżeczki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Szczypiorek",10,"2 łyżeczki"],["Papryka czerwona",100,"0,8 małej sztuki"],["Chleb żytni razowy",35,"1 kromka"],["Majonez Winiary Light",20,"2 łyżeczki"]],
+ r:"Jajka ugotuj na twardo, zetrzyj na tarce, połącz z drobno pokrojonym szczypiorkiem, porcją majonezu i jogurtem. Przypraw odrobiną soli i pieprzu. Wszystko dokładnie wymieszaj. Zjedz z porcją pieczywa i surowej papryki."},
+{n:7,c:"S",t:"Jajka na twardo, kabanos drobiowy, rzodkiewki, kiszone ogórki, pieczywo",e:353,b:27.2,f:18.8,w:23.5,
+ i:[["Jajka",60,"1 średnia sztuka"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Rzodkiewki",60,"4 sztuki"],["Kabanosy z kurczaka",70,"1,6 sztuki"],["Ogórki kiszone",100,"2 sztuki"],["Chleb żytni razowy",35,"1 kromka"]],
+ r:"Jajko ugotuj na twardo, obierz, przekrój na połówki i połóż na talerz, obok ułóż porcję pokrojonego kabanosa, pokrojone na plasterki rzodkiewki i kiszonego ogórka. Zjedz z pieczywem."},
+{n:8,c:"S",t:"Omlet z pieczarkami i z szynką, mix sałat",e:362,b:24.7,f:27.7,w:5.8,
+ i:[["Oliwa z oliwek",5,"1 łyżeczka"],["Pieczarki",120,"6 małych sztuk"],["Jajka",120,"2 średnie sztuki"],["Mix sałat",20,"1 garść"],["Masło",5,"1 łyżeczka"],["Mleko 1,5%",30,"2 łyżki"],["Szynka wiejska",30,"1,5 dużego plastra"]],
+ r:"Jaja wybij do miseczki, dodaj mleko i lekko ubij. W międzyczasie na patelni rozgrzej masło. Do roztrzepanych jajek dodaj przyprawy, starte pieczarki oraz pokrojoną szynkę i wymieszaj. Całą masę wylej na patelnię, przykryj pokrywką i pozostaw do ścięcia (na małym ogniu, około 5 minut). Następnie przewróć omlet na drugą stronę i potrzymaj jeszcze dwie minutki pod przykryciem. Przełóż na talerz, zjedz z porcją sałaty skropionej łyżeczką oliwy."},
+{n:9,c:"S",t:"Twarożek z olejem lnianym, rzodkiewką i szczypiorkiem, pieczywo",e:360,b:33.2,f:13.8,w:29.6,
+ i:[["Twaróg półtłusty",150,"5 plastrów"],["Jogurt naturalny 2%",50,"2 łyżki"],["Olej lniany",5,"1 łyżeczka"],["Rzodkiewki",60,"4 sztuki"],["Szczypiorek",10,"1 łyżka"],["Chleb żytni razowy",35,"1 kromka"]],
+ r:"Twaróg rozgnieć widelcem, wymieszaj z jogurtem, olejem lnianym, posiekanym szczypiorkiem, pokrojoną drobno rzodkiewką i przyprawami. Zjedz z pieczywem."},
+{n:10,c:"S",t:"Twaróg solankowy z warzywami i oliwą, pestki dyni",e:353,b:29.5,f:20,w:12.7,
+ i:[["Twaróg solankowy z czosnkiem (Jana / Biedronka)",150,"7,5 plastra"],["Papryka żółta",70,"0,3 dużej sztuki"],["Ogórek zielony",70,"0,4 dużej sztuki"],["Oliwa z oliwek",10,"2 łyżeczki"],["Pestki dyni",10,"2 łyżeczki"]],
+ r:"Twaróg do kupienia w Biedronce. Twaróg pokrój, dodaj pokrojone warzywa, skrop oliwą, przypraw solą i pieprzem i posyp pestkami dyni."},
+{n:11,c:"S",t:"Omlet z duszonymi porami, boczkiem, pomidorkami i parmezanem",e:369,b:26.1,f:26.2,w:10.7,
+ i:[["Jajka",120,"2 średnie sztuki"],["Oliwa z oliwek",5,"1 łyżeczka"],["Por",80,"1,6 kawałka"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Rukola",20,"1 garść"],["Parmezan",10,"2 łyżeczki"],["Pomidorki koktajlowe",100,"5 sztuk"],["Boczek wędzony surowy",24,"2 plastry"]],
+ r:"Pora pokrój w półplasterki, boczek w paseczki. Na patelni rozgrzej oliwę i przesmaż boczek, aż się zezłoci, następnie dodaj pora. Jajka roztrzep z pieprzem i solą, wylej na podsmażonego pora. Przykryj pokrywą i na wolnym ogniu smaż do ścięcia. Przełóż na talerz, obłóż połówkami pomidorków, posyp rukolą i tartym parmezanem."},
+{n:12,c:"S",t:"Jaja w sosie tatarskim z majonezem, pieczywo",e:353,b:20.9,f:20,w:24.7,
+ i:[["Jajka",120,"2 średnie sztuki"],["Pieczarki marynowane",20,"0,4 porcji"],["Pieprz czarny mielony",1,"1 szczypta"],["Sól",1,"1 szczypta"],["Szczypiorek",10,"1 łyżka"],["Ogórki konserwowe",50,"1 sztuka"],["Majonez Winiary Light",20,"2 łyżeczki"],["Chleb graham",30,"1 kromka"],["Jogurt naturalny 2%",50,"2 łyżki"]],
+ r:"Jaja ugotuj na twardo, obierz i przekrój na pół. Jogurt naturalny wymieszaj z majonezem light, drobno pokrojonymi ogórkami, pieczarkami marynowanymi i szczypiorkiem, dopraw solą i pieprzem. Gotowy sos rozłóż na połówkach jaj. Zjedz z pieczywem."},
+{n:13,c:"S",t:"Frankfurterki drobiowe z pieczywem, kiszonym ogórkiem i chrzanem",e:352,b:15.7,f:22.1,w:25.4,
+ i:[["Frankfurterki z indyka",100,"3,3 sztuki"],["Ogórki kiszone",100,"2 sztuki"],["Chrzan",10,"1 łyżeczka"],["Chleb żytni razowy",35,"1 kromka"],["Masło",5,"1 łyżeczka"]],
+ r:"Zagrzej frankfurterki (drobiowe, według wagi), przełóż na talerz, zjedz z chrzanem, ogórkami kiszonymi i pieczywem posmarowanym masłem."},
+{n:14,c:"S",t:"Twaróg z pomidorami, szczypiorkiem i oliwą",e:351,b:32.3,f:13.1,w:31,
+ i:[["Twaróg półtłusty",150,"5 plastrów"],["Oliwa z oliwek",5,"1 łyżeczka"],["Pomidory",200,"1 duża sztuka"],["Szczypiorek",10,"1 łyżka"],["Chleb żytni razowy",35,"1 kromka"]],
+ r:"Twaróg rozkrusz, dodaj pokrojone w kostkę pomidory i posiekany szczypiorek, skrop oliwą, przypraw solą i pieprzem, zjedz z pieczywem."},
+{n:15,c:"S",t:"Jajecznica na szynce wiejskiej, porcja warzyw",e:366,b:23.9,f:26.6,w:9.1,
+ i:[["Szczypiorek",10,"1 łyżka"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Masło",8,"1,5 łyżeczki"],["Jajka",120,"2 średnie sztuki"],["Papryka żółta",100,"0,8 małej sztuki"],["Szynka wiejska",40,"2 duże plastry"],["Ogórki kiszone",50,"1 sztuka"]],
+ r:"Szynkę wiejską pokrój, wrzuć na patelnię z masłem i chwilkę podsmaż. Dodaj wybite jajka i smaż do pożądanej konsystencji. Dopraw pieprzem i solą. Wyłóż na talerz i posyp szczypiorkiem. Zjedz z porcją świeżej papryki i ogórkiem kiszonym."},
+
+{n:16,c:"D",t:"Sałatka brokułowo-jajeczna z rzodkiewkami i sosem koperkowym",e:356,b:24.2,f:23.6,w:18.8,p:15,
+ i:[["Brokuł",200,"2 porcje"],["Sól morska",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Jajka",120,"2 średnie sztuki"],["Oliwa z oliwek",10,"2 łyżeczki"],["Rzodkiewki",80,"5,3 sztuki"],["Koperek",8,"1 łyżka"],["Jogurt naturalny 2%",50,"2 łyżki"]],
+ r:"Brokuła podziel na małe różyczki i krótko (3 minuty) ugotuj w osolonej wodzie. Jajka ugotuj na twardo. Na talerz wyłóż brokuły, jajka pokrojone w ósemki, plasterki rzodkiewki. Jogurt wymieszaj z oliwą, posiekanym koperkiem, solą i pieprzem. Polej sałatkę."},
+{n:17,c:"D",t:"Gęsta grochówka z jarzynami i kiełbasą",e:351,b:21.5,f:13.3,w:45.1,s:8,
+ i:[["Groch suchy",400,"2,1 szklanki"],["Kiełbasa zwyczajna czernichowska",350,"2,7 sztuki"],["Marchew",200,"4,4 sztuki"],["Pietruszka (korzeń)",150,"1,9 sztuki"],["Seler korzeniowy",100,"0,3 sztuki"],["Por",100,"2 kawałki"],["Ziemniaki",300,"2 duże sztuki"],["Kapusta włoska",100,"1,8 liścia"],["Natka pietruszki",30,"1 pęczek"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",5,"1 łyżeczka"],["Liść laurowy",4,"4 liście"],["Ziele angielskie",6,"6 sztuk"]],
+ r:"Zjedz porcję 500 ml, dokładnie przemieszaj przed nałożeniem. Grochówkę przygotuj w garnku 5–6 litrów, będzie gęsta i odżywcza. Groch przepłukaj, zalej wodą i namocz, najlepiej kilka godzin lub dzień wcześniej. Następnie dodaj pokrojone w drobną kostkę warzywa i kiełbaskę, gotuj wszystko razem do miękkości grochu. Dodaj również liście laurowe i ziele angielskie oraz przyprawy. Pod koniec gotowania weź blender ręczny i kilkukrotnie zblenduj zupę, tylko kilka razy, by część została zblendowana, a reszta pozostała w kawałkach. Na koniec dodaj posiekaną natkę pietruszki."},
+{n:18,c:"D",t:"Twarożek z owocami, słonecznikiem i miodem",e:358,b:29.4,f:13,w:34,
+ i:[["Twaróg półtłusty",130,"4,3 plastra"],["Borówki amerykańskie",50,"1 garść"],["Miód",6,"0,5 łyżeczki"],["Pomarańcza",120,"0,5 sztuki"],["Słonecznik łuskany",15,"3 łyżeczki"]],
+ r:"Ser twarogowy pokrój w kostkę, dodaj owoce, posyp ziarnami słonecznika i skrop miodem."},
+{n:19,c:"D",t:"Sałatka z burakiem i serkiem sałatkowym",e:347,b:13.3,f:25.9,w:18.9,p:10,
+ i:[["Buraki",120,"1,2 sztuki"],["Roszponka",25,"1 garść"],["Ocet balsamiczny",6,"2 łyżeczki"],["Rukola",20,"1 garść"],["Słonecznik łuskany",10,"2 łyżeczki"],["Ser sałatkowy Kortos NaTurek",70,"1,4 porcji"],["Olej lniany",10,"2 łyżeczki"]],
+ r:"Buraki ugotuj w łupinie, następnie obierz i pokrój na cienkie plastry. Ułóż na talerzu wyłożonym sałatą. Następnie pokrusz ser. Skrop olejem lnianym zmieszanym z octem i przyprawami. Posyp uprażonym na suchej patelni słonecznikiem."},
+{n:20,c:"D",t:"Talerz zupy domowej",e:380,b:27.2,f:17.2,w:31.2,
+ i:[["Zupa domowa (np. krupnik)",400,"1,3 talerza"]],
+ r:"Zjedz talerz zupy domowej bez zasmażek i zagęstników takich jak mąka. Wartości odżywcze policzone na podstawie krupniku."},
+{n:21,c:"D",t:"Sałatka jarzynowa z majonezem i wędliną",e:341,b:27.6,f:15,w:29.8,
+ i:[["Marchew",60,"1,3 sztuki"],["Pietruszka (korzeń)",40,"0,5 sztuki"],["Jajka",60,"1 średnia sztuka"],["Jogurt grecki",20,"1 łyżka"],["Ziemniaki",60,"1 mała sztuka"],["Seler korzeniowy",40,"0,7 plastra"],["Indyk z Bobrownik (wędlina)",60,"3 plastry"],["Ogórki kiszone",50,"1 sztuka"],["Groszek konserwowy",15,"1 łyżka"],["Musztarda",5,"0,5 łyżeczki"],["Majonez Winiary Light",20,"2 łyżeczki"]],
+ r:"Warzywa i jajo ugotuj. Pokrój w drobną kosteczkę. Dodaj pokrojonego ogórka kiszonego lub konserwowego i odcedzony groszek. Majonez wymieszaj z jogurtem i musztardą, dopraw, dodaj do warzyw, wymieszaj. Zjedz z porcją wędliny."},
+{n:22,c:"D",t:"Placuszki na skyrze z mandarynkami i pestkami dyni",e:337,b:20.1,f:10.5,w:42.1,s:2,
+ i:[["Skyr naturalny Piątnica",150,"1 opakowanie"],["Jajka",60,"1 średnia sztuka"],["Mąka orkiszowa jasna",60,"5 łyżek"],["Olej rzepakowy",5,"1 łyżeczka"],["Proszek do pieczenia",1,"0,3 łyżeczki"],["Mandarynki",300,"4 sztuki"],["Pestki dyni",20,"4 łyżeczki"]],
+ r:"Na jeden posiłek zjedz połowę! Do miski przełóż skyr, jajo, mąkę, proszek do pieczenia, olej i wymieszaj. Na patelni smaż małe placuszki po kilka minut z każdej strony. Po usmażeniu przełóż na talerz, udekoruj cząstkami mandarynek i pestkami dyni."},
+{n:23,c:"D",t:"Camembert, papryka, kiełbasa lisiecka drobiowa, pieczywo Wasa",e:362,b:29.3,f:17.4,w:25.8,p:5,
+ i:[["Camembert",60,"4 plastry"],["Papryka czerwona",200,"0,9 dużej sztuki"],["Kiełbasa lisiecka drobiowa",50,"1 porcja"],["Pieczywo chrupkie Wasa Delikatess",20,"2 kromki"]],
+ r:"Na talerz pokrój porcję sera camembert, porcję kiełbasy drobiowej, porcję czerwonej papryki. Zjedz z pieczywem chrupkim."},
+{n:24,c:"D",t:"Bułka z sałatą, majonezem, wędliną drobiową i ogórkiem",e:341,b:19.8,f:10.6,w:48.9,p:5,
+ i:[["Ogórek zielony",50,"1 mała sztuka"],["Majonez Winiary Light",20,"2 łyżeczki"],["Sałata zielona",10,"2 liście"],["Bułki grahamki",80,"1 sztuka"],["Kiełbasa lisiecka drobiowa",50,"1 porcja"]],
+ r:"Bułkę posmaruj majonezem, obłóż sałatą, wędliną i plastrami ogórka. Delikatnie przypraw i złóż kanapkę."},
+{n:25,c:"D",t:"Bezmięsne leczo z fetą",e:339,b:16.7,f:21.2,w:29.6,
+ i:[["Cukinia",200,"1,3 małej sztuki"],["Zioła prowansalskie",1,"1 szczypta"],["Oliwa z oliwek",10,"2 łyżeczki"],["Papryka czerwona",150,"0,7 dużej sztuki"],["Pomidory krojone z puszki",200,"0,8 szklanki"],["Kurkuma",3,"0,5 łyżeczki"],["Sól",1,"1 szczypta"],["Papryka słodka mielona",2,"0,5 łyżeczki"],["Ser typu feta",60,"0,3 kostki"]],
+ r:"Warzywa pokrój, wrzuć na oliwę, przesmaż krótko, następnie dodaj pomidory krojone z puszki lub pomidory świeże obrane i pokrojone. W razie konieczności podlej niewielką ilością wody i duś ok. 20–30 minut, aż warzywa zmiękną. Dopraw kurkumą, papryką i solą. Na koniec posyp pokruszoną fetą."},
+{n:26,c:"D",t:"Serek wiejski z kiełkami, słonecznikiem i pieczywem z oliwą i sałatą",e:373,b:27.4,f:20.1,w:22.1,p:5,
+ i:[["Pieprz czarny mielony",1,"1 szczypta"],["Serek wiejski ziarnisty",200,"1 duży kubek"],["Sól",1,"1 szczypta"],["Słonecznik łuskany",10,"2 łyżeczki"],["Sałata zielona",5,"1 liść"],["Chleb graham",30,"1 kromka"],["Oliwa z oliwek",5,"1 łyżeczka"],["Kiełki rzodkiewki",8,"1 łyżka"]],
+ r:"Serek ziarnisty przełóż do miseczki. Kiełki i słonecznik wymieszaj z serkiem, dopraw odrobiną soli i pieprzu. Zjedz z pieczywem skropionym oliwą i obłożonym sałatą."},
+{n:27,c:"D",t:"Sałatka z mozzarellą light i pomidorem",e:387,b:33.5,f:23.4,w:14.2,p:10,
+ i:[["Pomidory",200,"1 duża sztuka"],["Oliwa z oliwek",10,"2 łyżeczki"],["Pieprz czarny mielony",2,"2 szczypty"],["Sól morska",2,"2 szczypty"],["Mix sałat",20,"1 garść"],["Ocet jabłkowy",6,"2 łyżeczki"],["Mozzarella light",125,"1 kula"]],
+ r:"Na sałacie ułóż naprzemiennie plastry mozzarelli i pomidora. Przypraw solą, pieprzem, skrop oliwą i octem jabłkowym."},
+{n:28,c:"D",t:"Serek wiejski z olejem lnianym, pomidorkami koktajlowymi i pieczywem chrupkim",e:341,b:25.7,f:16.1,w:22,p:5,
+ i:[["Serek wiejski ziarnisty",200,"1 duży kubek"],["Pomidorki koktajlowe",150,"1,5 garści"],["Szczypiorek",10,"1 łyżka"],["Olej lniany",5,"1 łyżeczka"],["Pieczywo chrupkie Wasa Delikatess",20,"2 kromki"]],
+ r:"Pokrój pomidorki, wymieszaj z serkiem, dodaj olej lniany i posyp szczypiorkiem. Zjedz z pieczywem chrupkim."},
+
+{n:29,c:"O",t:"Filet z kurczaka w ziołach z czarnym ryżem i warzywami chińskimi",e:552,b:43.7,f:19.8,w:47.5,
+ i:[["Pierś z kurczaka",170,"1,7 porcji"],["Czosnek",5,"1 ząbek"],["Zioła prowansalskie",3,"0,5 łyżeczki"],["Oliwa z oliwek",15,"3 łyżeczki"],["Warzywa chińskie (mrożone)",200,"1,3 porcji"],["Ryż czarny (Targroch)",50,"3,3 łyżki"]],
+ r:"W naczyniu połącz zioła, przeciśnięty przez praskę czosnek, łyżeczkę oliwy, sól i pieprz. Powstałą mieszanką dokładnie natrzyj mięso. Odstaw na chwilę. Mięso wyłóż na rozgrzaną patelnię, szybko obsmaż z dwóch stron i podlej odrobiną wody. Duś pod przykryciem ok. 15 minut. Warzywa przyrządź na patelni skropionej dwiema łyżeczkami oliwy. Ryż ugotuj na sypko. Mięso, warzywa i ryż przełóż na duży talerz."},
+{n:30,c:"O",t:"Devolay z indyka, gotowany ziemniak, kiszone ogórki",e:582,b:41.7,f:29.6,w:38,
+ i:[["Masło",5,"1 łyżeczka"],["Ser żółty",14,"2 łyżeczki (tarty)"],["Ziemniaki",150,"1 duża sztuka"],["Olej rzepakowy",20,"2 łyżki"],["Ogórki kiszone",150,"3 sztuki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",5,"1 łyżeczka"],["Jajka",35,"1 białko",1],["Bułka tarta",8,"1 łyżka"],["Pierś z indyka",150,"1,5 porcji"]],
+ r:"Zmielone mięso przypraw delikatnie solą, wyrób, utwórz placek, w środek włóż masło i ser żółty, dokładnie zamknij i utwórz devolaya. Białko roztrzep z solą, pieprzem i czosnkiem. Mięso opanieruj w białku, następnie w bułce. Usmaż na niewielkiej ilości oleju. Ziemniaka ugotuj w łupinie. Mięso zjedz z przekrojonym na pół ziemniakiem w koszulce i kiszonymi ogórkami."},
+{n:31,c:"O",t:"Gotowana pierś z kurczaka z kaszą pęczak i buraczkami skropionymi olejem lnianym i sokiem z cytryny",e:538,b:44,f:18.4,w:54.9,p:30,
+ i:[["Sól",1,"1 szczypta"],["Buraki",180,"1,8 sztuki"],["Pierś z kurczaka",170,"1,7 porcji"],["Olej lniany",15,"3 łyżeczki"],["Cytryna (sok)",6,"2 łyżeczki soku"],["Kasza pęczak",50,"0,3 szklanki"]],
+ r:"Kaszę ugotuj według przepisu na opakowaniu. Pierś ugotuj (może być z rosołu). Buraczki ugotuj w łupinach, obierz, pokrój w drobną kostkę, skrop olejem lnianym, sokiem z cytryny, lekko posól i wymieszaj. Podaj z wcześniej ugotowaną kaszą i gotowanym mięsem."},
+{n:32,c:"O",t:"Łazanki z makaronem pełnoziarnistym, mięsem mielonym z indyka i natką pietruszki",e:559,b:37.5,f:19.8,w:61,
+ i:[["Kapusta biała",150,"3 liście"],["Oliwa z oliwek",15,"3 łyżeczki"],["Natka pietruszki",24,"2 łyżki"],["Mięso mielone z indyka",120,"1,2 porcji"],["Makaron pełnoziarnisty",70,"7 łyżek"]],
+ r:"Makaron ugotuj wg instrukcji na opakowaniu. Kapustę umyj, poszatkuj, duś do miękkości, odcedź. Na patelni rozgrzej oliwę, podsmaż mielone mięso. Smaż kilka minut. Następnie w większym garnku wymieszaj odcedzoną kapustę, makaron i mięso. Wszystko dokładnie wymieszaj, dopraw solą i pieprzem. Posyp zieleniną."},
+{n:33,c:"O",t:"Klopsiki w sosie pomidorowym z kaszą gryczaną białą, ogórki kiszone",e:543,b:43.1,f:16.9,w:54.7,
+ i:[["Sól",1,"1 szczypta"],["Pieprz czarny mielony",3,"0,5 łyżeczki"],["Jajka",18,"0,5 białka",0.5],["Oliwa z oliwek",10,"2 łyżeczki"],["Passata pomidorowa",120,"1,2 porcji"],["Mięso mielone z indyka",150,"1,5 porcji"],["Natka pietruszki",12,"1 łyżka"],["Kasza gryczana biała (Sante)",60,"4,6 łyżki"],["Ogórki kiszone",150,"3 sztuki"]],
+ r:"Do mięsa dodaj białko jaja i przyprawy. Dokładnie wyrób i uformuj małe klopsiki. Na patelni rozgrzej oliwę, dodaj passatę i przyprawy (sól, pieprz). Ostrożnie powkładaj klopsiki, przykryj pokrywką i duś na małym ogniu ok. 20 minut. Kaszę ugotuj. Na talerz wyłóż kaszę razem z klopsikami w sosie pomidorowym. Posyp posiekaną natką pietruszki. Zjedz z kiszonymi ogórkami."},
+{n:34,c:"O",t:"Gulasz wieprzowy z kaszą gryczaną i sałatką słoikową",e:560,b:36,f:20.4,w:62.8,
+ i:[["Cebula",25,"0,5 małej sztuki"],["Czosnek",5,"1 ząbek"],["Oliwa z oliwek",5,"1 łyżeczka"],["Passata pomidorowa",30,"2 łyżki"],["Majeranek",1,"1 szczypta"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Liść laurowy",1,"1 liść"],["Ziele angielskie",2,"2 sztuki"],["Papryka słodka mielona",2,"0,5 łyżeczki"],["Kasza gryczana",50,"0,3 szklanki"],["Schab bez kości",130,"1,3 porcji"],["Mąka ziemniaczana",6,"0,5 łyżeczki"],["Sałatka szwedzka Motyl",150,"1 porcja"]],
+ r:"Kaszę ugotuj według przepisu na opakowaniu. Cebulę pokrój w kostkę, czosnek przeciśnij przez praskę i zeszklij razem na rozgrzanym oleju. Dodaj słodką paprykę, majeranek i wymieszaj. Do cebuli i czosnku wrzuć pokrojone w kostkę mięso i chwilę smaż razem. Po kilku minutach dodaj przecier pomidorowy, ziele angielskie i liść laurowy. Podlej niewielką ilością wody. Duś około godziny. Dopraw solą i pieprzem. Na koniec zagęść odrobiną mąki ziemniaczanej. Podawaj z kaszą i porcją sałatki szwedzkiej (może być ze słoika)."},
+{n:35,c:"O",t:"Ziołowy filet z kurczaka na parze, kasza pęczak, kalafior",e:533,b:47.1,f:18.7,w:51.9,
+ i:[["Pierś z kurczaka",170,"1,7 porcji"],["Czosnek",5,"1 ząbek"],["Zioła prowansalskie",1,"1 szczypta"],["Oliwa z oliwek",15,"3 łyżeczki"],["Kalafior",250,"0,3 sztuki"],["Kasza pęczak",50,"0,3 szklanki"]],
+ r:"W naczyniu połącz ze sobą zioła, czosnek, połowę oliwy, sól i pieprz. Powstałą mieszanką dokładnie natrzyj mięso. Odstaw na chwilę. Mięso przyrządź w naczyniu do gotowania na parze lub na patelni pod przykryciem (podlewając niewielką ilością wody). Kalafiora ugotuj w lekko osolonej wodzie (możesz też ugotować na parze). Po ugotowaniu skrop pozostałą oliwą. Kaszę ugotuj osobno. Wszystko wyłóż na duży talerz."},
+{n:36,c:"O",t:"Kurczak z piekarnika z mixem sałat i sosem kaparowym z odrobiną majonezu",e:540,b:55.1,f:30.1,w:14.1,
+ i:[["Pieprz czarny mielony",1,"1 szczypta"],["Sól",1,"1 szczypta"],["Oliwa z oliwek",5,"1 łyżeczka"],["Cebula",75,"1 średnia sztuka"],["Mix sałat",50,"2,5 garści"],["Kapary",10,"1 łyżka"],["Ogórek zielony",50,"1 mała sztuka"],["Udka z kurczaka bez skóry",280,"1 duża sztuka"],["Jogurt naturalny 2%",50,"0,3 małego kubka"],["Majonez Winiary Light",20,"2 łyżeczki"],["Zioła prowansalskie",3,"0,5 łyżeczki"]],
+ r:"Porcję kurczaka bez skóry natrzyj przyprawami, oliwą i ziołami. Włóż do naczynia żaroodpornego razem z pokrojoną cebulką. Piecz w nagrzanym piekarniku ok. 60 minut, co jakiś czas obracając, by równo się przyrumieniło. Z jogurtu, przypraw, pokrojonych kaparów i odrobiny majonezu przygotuj sos. Na talerzu ułóż sałatę, plasterki ogórka i mięso i całość polej sosem jogurtowo-kaparowym."},
+{n:37,c:"O",t:"Łazanki z mięsem wołowym mielonym, kapustą kiszoną i cebulką",e:566,b:38.5,f:20.6,w:60.7,
+ i:[["Makaron pełnoziarnisty",75,"1,1 porcji"],["Cebula",50,"1 mała sztuka"],["Oliwa z oliwek",15,"3 łyżeczki"],["Natka pietruszki",24,"2 łyżki"],["Mięso mielone wołowe",120,"1,2 porcji"],["Kapusta kiszona",120,"1,1 szklanki"]],
+ r:"Makaron ugotuj najlepiej dzień wcześniej wg instrukcji na opakowaniu. Kapustę przepłucz, ugotuj. Na patelni rozgrzej oliwę, podsmaż cebulkę i mielone mięso. Smaż kilka minut. Następnie w większym garnku wymieszaj odcedzoną kapustę, makaron i mięso. Wszystko dokładnie wymieszaj, dopraw solą i pieprzem. Posyp zieleniną."},
+{n:38,c:"O",t:"Lekki gulasz z kurczaka z zielonym groszkiem i pęczakiem",e:556,b:50.6,f:12,w:72.4,
+ i:[["Cebula",50,"1 mała sztuka"],["Czosnek",5,"1 ząbek"],["Marchew",50,"1,1 sztuki"],["Groszek zielony mrożony",120,"0,3 opakowania"],["Oliwa z oliwek",5,"1 łyżeczka"],["Mąka ziemniaczana",6,"0,5 łyżeczki"],["Pierś z kurczaka",170,"1,7 porcji"],["Śmietana 12%",25,"1 łyżka"],["Kasza pęczak",50,"0,3 szklanki"]],
+ r:"Mięso, cebulę, czosnek i marchewkę pokrój, przesmaż na oliwie i podlej wodą. Duś ok. 30 minut, następnie przypraw delikatnie solą, pieprzem i zagęść mąką ziemniaczaną zmieszaną ze śmietaną. Kaszę ugotuj oddzielnie. Groszek ugotuj krótko w osolonym wrzątku i odcedź. Potrawkę wyłóż na duży talerz razem z pęczakiem i zielonym groszkiem."},
+{n:39,c:"O",t:"Gyros z polędwiczki z pieczonymi ziemniaczkami, kapustą pekińską i sosem koperkowym",e:530,b:42,f:21.5,w:41.5,
+ i:[["Przyprawa gyros",2,"0,5 łyżeczki"],["Oliwa z oliwek",15,"3 łyżeczki"],["Papryka chili mielona",1,"1 szczypta"],["Ziemniaki",200,"2 sztuki"],["Kapusta pekińska",150,"3 liście"],["Polędwiczka wieprzowa",150,"1,5 porcji"],["Jogurt grecki",50,"0,3 opakowania"],["Koperek",4,"1 łyżeczka"]],
+ r:"Połowę oliwy połącz z mieszanką przypraw. Mięso pokrój w paski i natrzyj marynatą. Patelnię rozgrzej i usmaż mięso. Ziemniaki dokładnie umyj, pokrój w ósemki i gotuj 10 minut. Lekko przestudzone wyłóż na blachę do pieczenia, dopraw ziołami i skrop pozostałą oliwą. Zapiekaj w piekarniku nagrzanym do 180 stopni około 15 minut. Kapustę poszatkuj. Jogurt przełóż do miseczki, dodaj posiekany koperek, przyprawy i wymieszaj. Zjedz mięso z pieczonymi ziemniakami, kapustą pekińską i sosem koperkowym."},
+{n:40,c:"O",t:"Carbonara",e:555,b:25.1,f:25.2,w:58.3,p:30,
+ i:[["Jajka",20,"1 żółtko",1],["Sól",3,"3 szczypty"],["Czosnek",5,"1 ząbek"],["Natka pietruszki",12,"1 łyżka"],["Cebula",50,"1 mała sztuka"],["Boczek wędzony surowy",30,"3 plastry"],["Makaron pełnoziarnisty",75,"1,1 porcji"],["Oliwa z oliwek",5,"1 łyżeczka"],["Śmietana 12%",25,"1 łyżka"],["Parmezan",10,"2 łyżeczki"]],
+ r:"Na patelni rozgrzej oliwę i dodaj pokrojony w kostkę boczek, poczekaj, aż chwilę się obsmaży. Dodaj na patelnię do boczku pokrojoną w kostkę cebulkę oraz zmiażdżony ząbek czosnku. Ugotuj makaron wg przepisu. W miseczce wymieszaj żółtko ze śmietanką. Gdy boczek i cebula są przesmażone, dodaj na patelnię ugotowany makaron i przemieszaj. Na koniec dodaj śmietankę z żółtkiem i potarty grana padano lub parmezan i chwilę mieszaj razem, aż sos zgęstnieje. Wyłóż na talerz i posyp natką pietruszki."},
+{n:41,c:"O",t:"Gotowana kiełbasa drobiowa z surówką Colesław, musztardą i ketchupem",e:530,b:30.9,f:34,w:21.7,
+ i:[["Kiełbasa z piersi kurczaka (Morliny)",160,"1,3 porcji"],["Surówka Colesław (Vital Fresh)",200,"0,7 opakowania"],["Musztarda",10,"1 łyżeczka"],["Ketchup",10,"1,4 łyżeczki"]],
+ r:"Drobiową kiełbasę ugotuj. Zjedz z porcją surówki i ewentualnie musztardą lub ketchupem."},
+{n:42,c:"O",t:"Ryż z sosem słodko-kwaśnym Łowicz i kurczakiem",e:557,b:41.9,f:14.3,w:63.5,
+ i:[["Sos słodko-kwaśny Łowicz",150,"1 porcja"],["Pierś z kurczaka",170,"1,7 porcji"],["Oliwa z oliwek",10,"2 łyżeczki"],["Ryż czarny (Targroch)",50,"0,2 szklanki"]],
+ r:"Ryż ugotuj (brązowy lub czarny). Mięso pokrój w kostkę i przesmaż na oliwie. Do mięsa dodaj porcję gotowego sosu i podduś razem 2 minutki. Na talerz wyłóż ryż, polej sosem."},
+{n:43,c:"O",t:"Duszony filet z indyka z kaszą i mieszanką warzyw",e:551,b:44,f:18.8,w:52.6,p:30,
+ i:[["Kurkuma",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Sól",1,"1 szczypta"],["Oliwa z oliwek",15,"3 łyżeczki"],["Warzywa na patelnię z przyprawą włoską (Hortex)",150,"0,3 opakowania"],["Kasza gryczana",60,"0,6 woreczka"],["Pierś z indyka",170,"1,7 porcji"]],
+ r:"Kaszę ugotuj. Mięso pokrój na dwa plastry, delikatnie rozbij, dopraw solą, pieprzem, oliwą i kurkumą, podduś na patelni, podlewając odrobiną wody. Mieszankę ulubionych warzyw mrożonych przyrządź na patelni lub na parze. Na talerz wyłóż kaszę, duszone mięso i warzywa."},
+{n:44,c:"O",t:"Żurek z ziemniakami i jajkiem",e:572,b:22.4,f:27.4,w:59.7,
+ i:[["Marchew",30,"0,7 sztuki"],["Majeranek",3,"0,5 łyżeczki"],["Zakwas na żurek",120,"0,5 szklanki"],["Seler korzeniowy",30,"0,5 plastra"],["Ziemniaki",200,"3,3 małej sztuki"],["Czosnek",5,"1 ząbek"],["Jajka",120,"2 średnie sztuki"],["Oliwa z oliwek",15,"3 łyżeczki"]],
+ r:"Ziemniaki ugotuj osobno. Jaja ugotuj na twardo. Pozostałe warzywa pokrój, zalej wodą, ugotuj wywar warzywny. Na końcu wlej zakwas, oliwę, dopraw majerankiem, solą, czosnkiem, odrobiną pieprzu. Żurek podawaj w głębokim talerzu, razem z jajkiem, jarzyną i ziemniakami."},
+{n:45,c:"O",t:"Zupa domowa, fasolka szparagowa z bułką tartą i jajkiem sadzonym",e:568,b:33.2,f:34,w:39.8,
+ i:[["Zupa domowa (np. krupnik)",320,"1 talerz"],["Fasolka szparagowa",150,"1 talerz"],["Jajka",60,"1 średnia sztuka"],["Oliwa z oliwek",10,"2 łyżeczki"],["Bułka tarta",4,"0,5 łyżki"],["Masło",5,"1 łyżeczka"]],
+ r:"Zjedz talerz zupy domowej. Na drugie danie zjedz porcję fasolki szparagowej okraszonej bułką tartą podprażoną na oliwie oraz jajko sadzone na maśle."},
+{n:46,c:"O",t:"Grillowany camembert z żurawiną, sałatką",e:542,b:28.4,f:40.4,w:15.4,
+ i:[["Camembert",120,"1 opakowanie"],["Żurawina do mięs i serów",20,"2 łyżeczki"],["Sałata rzymska",105,"3 liście"],["Rukola",20,"1 garść"],["Oliwa z oliwek",10,"2 łyżeczki"],["Ocet balsamiczny",6,"2 łyżeczki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Tymianek suszony",1,"1 szczypta"],["Słonecznik łuskany",5,"1 łyżeczka"]],
+ r:"Sałaty (mogą być dowolne, może być mix sałat) porwij na mniejsze kawałki i ułóż na talerzu. Oliwę zmieszaj z octem balsamicznym, łyżką wody i przyprawami. Camembert w całości ugrilluj. Ser przełóż na sałatkę, skrop sosem, posyp uprażonymi ziarnami słonecznika, zjedz z żurawiną ze słoiczka (taką do mięs i serów)."},
+{n:47,c:"O",t:"Hamburgery wołowe (porcja na trzy burgery)",e:555,b:44.5,f:15.6,w:66.2,s:3,
+ i:[["Musztarda",30,"3 łyżeczki"],["Pieprz cayenne",1,"1 szczypta"],["Woda",15,"1 łyżka"],["Sól",1,"1 szczypta"],["Cebula",75,"1 średnia sztuka"],["Ogórki konserwowe",100,"2 sztuki"],["Pomidory",130,"1 średnia sztuka"],["Sałata lodowa",120,"3 liście"],["Jogurt grecki",100,"0,7 opakowania"],["Rostbef wołowy",400,"4 porcje"],["Bułki grahamki",300,"3,3 sztuki"],["Jajka",50,"1 mała sztuka",1]],
+ r:"Porcja na trzy hamburgery, możesz zjeść jednego. Użyj bułek o gramaturze ok. 100 g. 1) Zmielone mięso dokładnie wyrób (najlepiej rękami) razem z jajkiem i przyprawami: solą, pieprzem, dwiema łyżeczkami musztardy i łyżką wody. Uformuj 3 okrągłe hamburgery. Grilluj na patelni grillowej lub zwykłej po kilka minut z każdej strony, koniecznie pod przykryciem (sprawdzony patent: wyłóż patelnię papierem do pieczenia, nic się nie przypala, nie trzeba dodatkowego tłuszczu, a mięso jest bardzo soczyste). 2) Sos: połowę cebuli i jednego ogórka bardzo drobniutko posiekaj, wymieszaj z łyżeczką musztardy i jogurtem greckim, dopraw solą i pieprzem. 3) Bułki przekrój, dolną połówkę posmaruj sosem, połóż liść sałaty, mięso, krążek cebuli, plaster pomidora i dwa plastry ogórka. Nałóż łyżeczkę sosu i przykryj drugą połówką."},
+
+{n:48,c:"K",t:"Parówki z szynki, pieczywo z masłem i szczypiorkiem, papryka żółta",e:348,b:14.7,f:23.1,w:22.3,
+ i:[["Parówki z szynki",80,"2 sztuki"],["Masło",3,"0,5 łyżeczki"],["Ketchup",7,"1 łyżeczka"],["Papryka żółta",70,"0,5 małej sztuki"],["Szczypiorek",5,"1 łyżeczka"],["Chleb graham",30,"1 kromka"]],
+ r:"Parówki podgrzej w wodzie, przełóż na talerz. Obok parówek ułóż porcję papryki. Zjedz z pieczywem posmarowanym masłem, posypanym szczypiorkiem, oraz z niewielką ilością ketchupu."},
+{n:49,c:"K",t:"Warzywa na patelnię z twarogiem solankowym",e:355,b:24.7,f:16.5,w:22.6,
+ i:[["Warzywa na patelnię (mrożone)",200,"0,4 opakowania"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Twaróg solankowy z czosnkiem (Jana / Biedronka)",120,"1,3 porcji"],["Oliwa z oliwek",10,"2 łyżeczki"]],
+ r:"Warzywa przygotuj na parze lub na patelni z odrobiną wody. Ciepłe przełóż na talerz i posyp pokruszonym twarogiem solankowym (z czosnkiem lub pomidorami, do kupienia w Biedronce) i skrop oliwą."},
+{n:50,c:"K",t:"Galaretka z warzywami, udkiem kurczaka i pieczywem",e:340,b:37.6,f:11.1,w:28.9,
+ i:[["Udka z kurczaka bez skóry",120,"1,2 porcji"],["Groszek konserwowy",15,"1 łyżka"],["Marchew",40,"0,9 sztuki"],["Pietruszka (korzeń)",30,"0,4 sztuki"],["Żelatyna",10,"2 łyżeczki"],["Ocet jabłkowy",6,"2 łyżeczki"],["Liść laurowy",1,"1 liść"],["Ziele angielskie",1,"1 sztuka"],["Jajka",30,"0,5 średniej sztuki"],["Chleb żytni razowy",35,"1 kromka"]],
+ r:"Warzywa obierz i razem z mięsem włóż do garnka. Zalej wodą, dodaj przyprawy i gotuj około 30 minut. Wywar ostudź i przecedź. Mięso i jajo pokrój w plasterki, marchewkę i pietruszkę w kostkę. Żelatynę rozpuść w 1 szklance gorącego wywaru i przestudź. Mięso, warzywa, jajo i groszek umieść w miseczce, zalej żelatyną i odstaw do stężenia. Gotową galaretę skrop octem jabłkowym. Zjedz z pieczywem."},
+{n:51,c:"K",t:"Uszka z mięsem, barszcz czerwony czysty",e:348,b:14.4,f:18,w:35.4,
+ i:[["Barszcz czerwony (np. Krakus)",240,"1 szklanka"],["Uszka z mięsem",120,"1,2 porcji"]],
+ r:"Ugotuj barszcz czerwony na wywarze warzywnym (możesz użyć gotowego barszczu Krakus i łyżeczki oliwy). Ugotuj uszka (mogą być z mięsem lub z kapustą i grzybami). Na talerz nałóż odcedzone uszka i zalej czystym barszczem."},
+{n:52,c:"K",t:"Kanapki z serem żółtym, szynką drobiową, sałatą i ogórkiem zielonym",e:367,b:24.1,f:17.6,w:29.8,
+ i:[["Ser żółty",30,"2 plastry"],["Masło",5,"1 łyżeczka"],["Ogórek zielony",50,"1 mała sztuka"],["Sałata zielona",10,"2 liście"],["Chleb orkiszowy 100%",70,"2 kromki"],["Indyk z Bobrownik (wędlina)",40,"2 plastry"]],
+ r:"Pieczywo posmaruj cienko masłem, obłóż sałatą, serem, szynką drobiową i plastrami zielonego ogórka."},
+{n:53,c:"K",t:"Zapiekanki z mozzarellą, pieczarkami i natką pietruszki",e:344,b:19.8,f:16.8,w:34.5,
+ i:[["Pieczarki",120,"3,4 dużej sztuki"],["Masło",5,"1 łyżeczka"],["Mozzarella",50,"3,3 plastra"],["Natka pietruszki",12,"1 łyżka"],["Chleb graham",60,"2 kromki"]],
+ r:"Pieczarki zetrzyj na tarce. Przesmaż na maśle, przypraw solą i pieprzem. Gotowy farsz nałóż na dwie kromki pieczywa, na wierzch połóż po plastrze mozzarelli. Zapiecz w piekarniku. Przed podaniem posyp posiekaną natką pietruszki."},
+{n:54,c:"K",t:"Szybka pizza z patelni na tortilli",e:385,b:26.9,f:15.4,w:42.5,
+ i:[["Tortilla pełnoziarnista",62,"1 sztuka"],["Przecier pomidorowy Podravka (karton)",30,"1,5 łyżki"],["Pieczarki",80,"4 małe sztuki"],["Oliwa z oliwek",5,"1 łyżeczka"],["Oregano suszone",3,"0,5 łyżeczki"],["Szynka prasowana",30,"1,5 dużego plastra"],["Rukola",20,"1 garść"],["Pomidorki koktajlowe",100,"5 sztuk"],["Mozzarella light",45,"3 plastry"]],
+ r:"Dużą patelnię teflonową rozgrzej. Placek tortilli zagrzej przez minutę z jednej strony, następnie odwróć i od razu zmniejsz moc kuchenki. Placek posmaruj przecierem pomidorowym wymieszanym z oliwą. Posyp oregano. Równomiernie rozłóż porwane kawałki mozzarelli, plasterki pieczarek i pokrojoną szynkę. Koniecznie przykryj pokrywą i odczekaj kilka minut do roztopienia sera. Pilnuj, by nie przypalić tortilli. Wyłóż na talerz, posyp rukolą i obłóż połówkami pomidorków."},
+{n:55,c:"K",t:"Sałatka z warzyw i serka ziarnistego",e:363,b:26.1,f:23.1,w:13.8,
+ i:[["Serek wiejski ziarnisty",200,"1 duży kubek"],["Pomidorki koktajlowe",150,"7,5 sztuki"],["Mix sałat",40,"2 garście"],["Ogórek zielony",100,"0,8 średniej sztuki"],["Olej lniany",10,"2 łyżeczki"],["Pestki dyni",5,"1 łyżeczka"]],
+ r:"Na talerzu ułóż sałatę, pokrój pomidorki i ogórka. Na wierzch wyłóż serek ziarnisty, skrop olejem lnianym, możesz przyprawić solą i pieprzem. Posyp pestkami dyni."},
+{n:56,c:"K",t:"Camembert zapiekany na pomidorach z oliwą, czosnkiem, ziołami i bazylią",e:347,b:17.8,f:20.5,w:26.7,s:2,
+ i:[["Camembert",120,"1 opakowanie"],["Pomidorki koktajlowe",400,"4 garście"],["Oliwa z oliwek",10,"2 łyżeczki"],["Czosnek",20,"4 ząbki"],["Bazylia świeża",6,"6 listków"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Zioła prowansalskie",3,"0,5 łyżeczki"],["Chleb graham",60,"2 kromki"]],
+ r:"Zjedz pół porcji. Pomidorki pokrój na połówki, skrop oliwą, posyp przyprawami i ziołami, przemieszaj, na środek połóż cały camembert. Zapiekaj do rozparzenia pomidorków. Pod koniec dodaj liście świeżej bazylii. Wyłóż, zjedz z pieczywem."},
+{n:57,c:"K",t:"Bób z oliwą i solą morską, kanapka z szynką z indyka i kiszonym ogórkiem",e:359,b:28.4,f:11.2,w:52.5,p:20,
+ i:[["Sól morska",2,"2 szczypty"],["Oliwa z oliwek",5,"1 łyżeczka"],["Ogórki kiszone",50,"1 sztuka"],["Sałata zielona",5,"1 liść"],["Bób mrożony",250,"1,5 szklanki"],["Indyk z Bobrownik (wędlina)",40,"2 plastry"],["Chleb żytni razowy",35,"1 kromka"],["Masło",5,"1 łyżeczka"]],
+ r:"Bób ugotuj do miękkości. Odcedź, wymieszaj z oliwą i przypraw grubo mieloną solą. Pieczywo posmaruj masłem, obłóż sałatą, wędliną i plastrami kiszonego ogórka."},
+{n:58,c:"K",t:"Sałatka z selerem konserwowym, kukurydzą i kurczakiem",e:337,b:32.1,f:16.6,w:14.5,p:15,s:2,
+ i:[["Pierś z kurczaka",260,"2,6 porcji"],["Seler konserwowy (Rolnik Wyborny)",200,"2 porcje"],["Oliwa z oliwek",15,"3 łyżeczki"],["Sezam",10,"2 łyżeczki"],["Ocet balsamiczny",6,"2 łyżeczki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Papryka słodka mielona",1,"1 szczypta"],["Kukurydza konserwowa",30,"2 łyżki"],["Zioła prowansalskie",3,"0,5 łyżeczki"],["Majonez Winiary Light",20,"2 łyżeczki"],["Jogurt naturalny 2%",50,"2 łyżki"],["Kapusta pekińska",50,"1 liść"]],
+ r:"Mięso natrzyj przyprawami, ziołami, pokrój i podsmaż na oliwie. Porwij lub pokrój sałatę, dodaj seler, kukurydzę i mięso. Jogurt wymieszaj z sezamem, majonezem light, octem balsamicznym i dopraw solą i pieprzem. Powstały sos dodaj do sałatki i wymieszaj."},
+{n:59,c:"K",t:"Jajecznica na śmietanie, kanapka z żółtym serem",e:369,b:22.9,f:23.8,w:17.9,
+ i:[["Śmietana 12%",25,"1 łyżka"],["Jajka",120,"2 średnie sztuki"],["Chleb graham",30,"1 kromka"],["Masło",5,"1 łyżeczka"],["Ser żółty",15,"1 plaster"],["Pomidory",40,"2 plastry"],["Sałata zielona",5,"1 liść"]],
+ r:"Na patelni rozgrzej krótko śmietanę, wybij jajka, przypraw i smaż do ścięcia. Pieczywo posmaruj masłem, obłóż sałatą, serem i plastrami pomidora."},
+{n:60,c:"K",t:"Kanapki z wędliną, kiszonym ogórkiem i szczypiorkiem, porcja camemberta",e:354,b:16.4,f:18.1,w:38,
+ i:[["Chleb żytni razowy",70,"2 kromki"],["Masło",5,"1 łyżeczka"],["Ogórki kiszone",50,"1 sztuka"],["Sałata zielona",15,"3 liście"],["Szczypiorek",10,"1 łyżka"],["Szynka chłopska",40,"2 duże plastry"],["Camembert",20,"1,3 plastra"]],
+ r:"Pieczywo posmaruj masłem, obłóż zieloną sałatą, plastrami wędliny i plastrami kiszonego ogórka. Posyp szczypiorkiem. Zjedz z porcją camemberta."},
+{n:61,c:"K",t:"Bruschetty z mozzarellą i suszonymi pomidorami, porcja papryki",e:361,b:14.6,f:18.7,w:35.6,p:15,
+ i:[["Oregano suszone",1,"1 szczypta"],["Mozzarella",40,"2,7 plastra"],["Pomidory suszone",30,"2 średnie sztuki"],["Bagietka pełnoziarnista",40,"0,5 małej sztuki"],["Oliwa z oliwek",5,"1 łyżeczka"],["Papryka żółta",100,"0,8 małej sztuki"]],
+ r:"Porcję bagietki skrop oliwą. Pomidory suszone drobno pokrój. Na bagietki połóż plastry sera i pokrojone pomidory. Przypraw ziołami. Zapiecz w piekarniku ok. 10 min w 180 stopniach. Zjedz z porcją papryki."},
+{n:62,c:"K",t:"Sałatka cezar",e:399,b:37.7,f:18.7,w:24.2,
+ i:[["Pierś z kurczaka",150,"1,5 porcji"],["Sałata rzymska",70,"2 liście"],["Czosnek",3,"0,5 ząbka"],["Jogurt naturalny 2%",25,"1 łyżka"],["Oliwa z oliwek",15,"3 łyżeczki"],["Oregano suszone",3,"0,5 łyżeczki"],["Pomidorki koktajlowe",100,"1 garść"],["Tymianek suszony",1,"0,5 szczypty"],["Ocet jabłkowy",6,"2 łyżeczki"],["Bułki grahamki",20,"0,3 sztuki"],["Ogórek zielony",50,"1 mała sztuka"]],
+ r:"Filet z kurczaka w całości dokładnie nasmaruj dwiema łyżeczkami oliwy, solą, pieprzem i ziołami (może być tymianek i oregano). Na rozgrzanej patelni krótko przesmaż z obu stron na złoty kolor i podduś pod przykryciem ok. 10–15 minut, można delikatnie podlać wodą. Liście sałaty dokładnie umyj, osusz, ułóż na talerzu, na sałacie wyłóż pokrojone pomidorki i plasterki ogórka. Pieczywo pokrój w kosteczkę i ugrilluj na patelni skropionej łyżeczką oliwy. Jogurt wymieszaj z octem jabłkowym, solą, pieprzem i czosnkiem przeciśniętym przez praskę (możesz pominąć). Upieczone mięso pokrój w plastry, ułóż na sałacie i polej sosem jogurtowym. Na wierzch wyłóż grzanki."}
+];
+
+/* ---------- Jadłospis Miłosza ----------
+   Ten sam numer co u Sandry = ten sam posiłek w innej gramaturze.
+   Numery 63–67 są tylko u Miłosza.
+   i: "S" = składniki identyczne jak u Sandry; x: dodatki do każdej porcji;
+   d: krótka różnica względem wersji Sandry; rx: zdanie dopisane do przepisu Sandry;
+   r: własny przepis; warn: uwaga do sprawdzenia */
+const MEALS_M = [
+{n:1,e:491,b:22.2,f:26.5,w:49.4,d:"dwie kanapki",
+ i:[["Jajka",120,"2 średnie sztuki"],["Masło",5,"1 łyżeczka"],["Chleb żytni razowy",70,"2 kromki"],["Pasta Wawrzyniec z grillowanym bakłażanem",50,"2 łyżki"],["Pietruszka (korzeń)",50,"0,6 sztuki"],["Marchew",50,"1,1 sztuki"]]},
+{n:3,e:506,b:24,f:29,w:43,d:"dwie kanapki",
+ i:[["Jajka",120,"2 średnie sztuki"],["Masło",5,"1 łyżeczka"],["Chleb żytni razowy",70,"2 kromki"],["Serek Almette",60,"6 łyżeczek"],["Pomidory",80,"4 plastry"]]},
+{n:4,e:472,b:29,f:25.6,w:38.2,d:"+ pieczywo",rx:"Zjedz z pieczywem.",
+ i:[["Pieczarki",120,"6 małych sztuk"],["Jajka",120,"2 średnie sztuki"],["Mix sałat",40,"2 garście"],["Masło",5,"1 łyżeczka"],["Parmezan",10,"2 łyżeczki"],["Olej lniany",5,"1 łyżeczka"],["Pomidory",130,"1 średnia sztuka"],["Chleb graham",60,"2 kromki"]]},
+{n:5,e:501,b:21.7,f:33.5,w:33,
+ i:[["Parówki z szynki",120,"3 sztuki"],["Ogórki kiszone",150,"3 sztuki"],["Chleb żytni razowy",50,"1,4 kromki"],["Masło",3,"0,5 łyżeczki"],["Chrzan",10,"1 łyżeczka"],["Sałata zielona",5,"1 liść"]]},
+{n:6,e:477,b:22.5,f:24.7,w:49.4,d:"+ pieczywo z masłem i sałatą",rx:"Zjedz z kanapkami z masłem i sałatą.",
+ i:[["Jajka",120,"2 średnie sztuki"],["Jogurt naturalny 2%",20,"2 łyżeczki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Szczypiorek",10,"2 łyżeczki"],["Papryka czerwona",130,"1 mała sztuka"],["Chleb żytni razowy",70,"2 kromki"],["Masło",5,"1 łyżeczka"],["Sałata zielona",10,"2 liście"],["Majonez Winiary Light",20,"2 łyżeczki"]]},
+{n:7,e:515,b:36.6,f:31.9,w:26,d:"+ orzechy włoskie",rx:"Zjedz też kilka orzechów.",
+ i:[["Jajka",120,"2 średnie sztuki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Rzodkiewki",60,"4 sztuki"],["Kabanosy z kurczaka",70,"1,6 sztuki"],["Ogórki kiszone",100,"2 sztuki"],["Chleb żytni razowy",35,"1 kromka"],["Orzechy włoskie",12,"3 sztuki"]]},
+{n:8,e:519,b:34.2,f:40.5,w:6.5,
+ i:[["Oliwa z oliwek",10,"2 łyżeczki"],["Pieczarki",120,"6 małych sztuk"],["Jajka",180,"3 średnie sztuki"],["Mix sałat",40,"2 garście"],["Masło",5,"1 łyżeczka"],["Mleko 1,5%",30,"2 łyżki"],["Szynka wiejska",40,"2 duże plastry"]]},
+{n:9,e:521,b:37.2,f:28.9,w:34.1,d:"+ orzechy włoskie",rx:"Do posiłku zjedz porcję orzechów włoskich.",
+ i:[["Twaróg półtłusty",150,"5 plastrów"],["Jogurt naturalny 2%",50,"2 łyżki"],["Olej lniany",5,"1 łyżeczka"],["Rzodkiewki",60,"4 sztuki"],["Szczypiorek",10,"1 łyżka"],["Chleb żytni razowy",35,"1 kromka"],["Orzechy włoskie",25,"0,8 garści"]]},
+{n:10,e:484,b:34,f:24.9,w:33.1,d:"+ słonecznik, pieczywo",rx:"Posyp też ziarnami słonecznika. Zjedz z pieczywem.",
+ i:[["Twaróg solankowy z czosnkiem (Jana / Biedronka)",150,"7,5 plastra"],["Papryka żółta",70,"0,3 dużej sztuki"],["Ogórek zielony",70,"0,4 dużej sztuki"],["Oliwa z oliwek",10,"2 łyżeczki"],["Pestki dyni",10,"2 łyżeczki"],["Chleb żytni razowy",35,"1 kromka"],["Słonecznik łuskany",10,"2 łyżeczki"]]},
+{n:11,e:506,b:37.4,f:35.3,w:14.2,
+ i:[["Jajka",180,"3 średnie sztuki"],["Oliwa z oliwek",5,"1 łyżeczka"],["Por",100,"2 kawałki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Rukola",20,"1 garść"],["Parmezan",15,"3 łyżeczki"],["Pomidorki koktajlowe",150,"1,5 garści"],["Boczek wędzony surowy",30,"2,5 plastra"]]},
+{n:12,e:503,b:30.9,f:26.3,w:39.7,
+ i:[["Jajka",180,"3 średnie sztuki"],["Pieczarki marynowane",20,"0,4 porcji"],["Pieprz czarny mielony",1,"1 szczypta"],["Sól",1,"1 szczypta"],["Szczypiorek",10,"1 łyżka"],["Ogórki konserwowe",50,"1 sztuka"],["Majonez Winiary Light",20,"2 łyżeczki"],["Chleb graham",60,"2 kromki"],["Jogurt naturalny 2%",50,"2 łyżki"]]},
+{n:13,e:477,b:20.7,f:26.2,w:45.1,
+ i:[["Frankfurterki z indyka",120,"4 sztuki"],["Ogórki kiszone",150,"3 sztuki"],["Chrzan",10,"1 łyżeczka"],["Chleb żytni razowy",70,"2 kromki"],["Masło",5,"1 łyżeczka"]]},
+{n:14,e:508,b:34.5,f:22.8,w:49.3,d:"+ pieczywo z masłem i sałatą",rx:"Pieczywo posmaruj masłem i obłóż sałatą.",
+ i:[["Twaróg półtłusty",150,"5 plastrów"],["Oliwa z oliwek",10,"2 łyżeczki"],["Pomidory",200,"1 duża sztuka"],["Szczypiorek",10,"1 łyżka"],["Chleb żytni razowy",70,"2 kromki"],["Masło",5,"1 łyżeczka"],["Sałata zielona",10,"2 liście"]]},
+{n:15,e:469,b:32.4,f:32.6,w:13.4,
+ i:[["Szczypiorek",10,"1 łyżka"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Masło",8,"1,5 łyżeczki"],["Jajka",180,"3 średnie sztuki"],["Papryka żółta",150,"1,2 małej sztuki"],["Szynka wiejska",40,"2 duże plastry"],["Ogórki kiszone",100,"2 sztuki"]]},
+{n:63,c:"S",t:"Kanapki z żółtym serem, pomidorem i kiełkami",e:487,b:21.7,f:23.6,w:56.7,
+ i:[["Pomidory",60,"1 mała sztuka"],["Kiełki rzodkiewki",8,"1 łyżka"],["Masło",8,"1,5 łyżeczki"],["Chleb żytni razowy",105,"3 kromki"],["Ser żółty",50,"3,3 plastra"],["Sałata zielona",15,"3 liście"]],
+ r:"Pieczywo posmaruj masłem, obłóż sałatą, plastrami żółtego sera, plastrami pomidora i posyp kiełkami."},
+{n:64,c:"S",t:"Makrela w pomidorach, kanapki z masłem i sałatą",e:528,b:27.2,f:30.6,w:39.2,
+ i:[["Masło",5,"1 łyżeczka"],["Sałata zielona",10,"2 liście"],["Makrela w sosie pomidorowym",170,"1 sztuka"],["Chleb graham",60,"2 kromki"]],
+ r:"Pieczywo posmaruj masłem i obłóż sałatą. Zjedz z porcją makreli w pomidorach."},
+
+{n:16,e:520,b:28.6,f:32.9,w:33.3,d:"+ pieczywo Wasa, orzechy włoskie",rx:"Zjedz z pieczywem chrupkim Wasa i porcją orzechów.",
+ i:[["Brokuł",200,"2 porcje"],["Sól morska",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Jajka",120,"2 średnie sztuki"],["Oliwa z oliwek",10,"2 łyżeczki"],["Rzodkiewki",80,"5,3 sztuki"],["Koperek",8,"1 łyżka"],["Jogurt naturalny 2%",50,"2 łyżki"],["Pieczywo chrupkie Wasa Delikatess",20,"2 kromki"],["Orzechy włoskie",15,"0,5 garści"]]},
+{n:17,e:281,b:17.2,f:10.7,w:36.1,s:10,d:"+ pistacje albo pieczywo",rx:"Do posiłku zjedz 40 g pistacji albo dwie kromki chleba żytniego razowego.",
+ i:"S", x:[["Pistacje",40,"albo 2 kromki chleba żytniego"]]},
+{n:18,e:500,b:41.2,f:19.7,w:43.1,
+ i:[["Twaróg półtłusty",180,"6 plastrów"],["Borówki amerykańskie",50,"1 garść"],["Miód",12,"1 łyżeczka"],["Pomarańcza",120,"0,5 sztuki"],["Słonecznik łuskany",25,"5 łyżeczek"]]},
+{n:19,e:519,b:19.6,f:40.1,w:25.3,
+ i:[["Buraki",150,"1,5 sztuki"],["Roszponka",25,"1 garść"],["Ocet balsamiczny",6,"2 łyżeczki"],["Rukola",20,"1 garść"],["Słonecznik łuskany",20,"4 łyżeczki"],["Ser sałatkowy Kortos NaTurek",100,"2 porcje"],["Olej lniany",15,"3 łyżeczki"]]},
+{n:20,e:475,b:34,f:21.5,w:39,d:"duży talerz",
+ i:[["Zupa domowa (np. krupnik)",500,"1,6 talerza"]]},
+{n:21,e:527,b:31.8,f:20.3,w:65.7,d:"+ pieczywo z masłem",rx:"Zjedz z pieczywem posmarowanym masłem.",
+ i:[["Marchew",60,"1,3 sztuki"],["Pietruszka (korzeń)",40,"0,5 sztuki"],["Jajka",60,"1 średnia sztuka"],["Jogurt grecki",20,"1 łyżka"],["Ziemniaki",60,"1 mała sztuka"],["Seler korzeniowy",40,"0,7 plastra"],["Indyk z Bobrownik (wędlina)",60,"3 plastry"],["Ogórki kiszone",50,"1 sztuka"],["Groszek konserwowy",15,"1 łyżka"],["Musztarda",5,"0,5 łyżeczki"],["Majonez Winiary Light",20,"2 łyżeczki"],["Chleb żytni razowy",70,"2 kromki"],["Masło",5,"1 łyżeczka"]]},
+{n:22,e:526,b:35,f:14,w:65.6,d:"cały przepis to jedna porcja",
+ r:"Do miski przełóż skyr, jajo, mąkę, proszek do pieczenia, olej i wymieszaj. Na patelni smaż małe placuszki po kilka minut z każdej strony. Po usmażeniu przełóż na talerz, udekoruj cząstkami mandarynek i pestkami dyni.",
+ i:[["Skyr naturalny Piątnica",150,"1 opakowanie"],["Jajka",60,"1 średnia sztuka"],["Mąka orkiszowa jasna",60,"5 łyżek"],["Olej rzepakowy",5,"1 łyżeczka"],["Proszek do pieczenia",1,"0,3 łyżeczki"],["Mandarynki",150,"2 sztuki"],["Pestki dyni",5,"1 łyżeczka"]]},
+{n:23,e:485,b:36.5,f:27.4,w:28.8,d:"+ orzechy włoskie",rx:"Zjedz też porcję orzechów.",
+ i:[["Camembert",60,"4 plastry"],["Papryka czerwona",200,"0,9 dużej sztuki"],["Kiełbasa lisiecka drobiowa",70,"1,4 porcji"],["Pieczywo chrupkie Wasa Delikatess",20,"2 kromki"],["Orzechy włoskie",15,"0,5 garści"]]},
+{n:24,e:461,b:28,f:15.4,w:60,d:"+ jogurt naturalny pitny",rx:"Wypij jogurt naturalny pitny (butelka albo szklanka).",
+ i:[["Ogórek zielony",50,"1 mała sztuka"],["Majonez Winiary Light",20,"2 łyżeczki"],["Sałata zielona",10,"2 liście"],["Bułki grahamki",80,"1 sztuka"],["Kiełbasa lisiecka drobiowa",50,"1 porcja"],["Jogurt naturalny pitny 2%",240,"1 butelka"]]},
+{n:25,e:502,b:22.3,f:30,w:47.8,d:"+ kanapka z szynką wiejską",rx:"Zjedz z kanapką z masłem, sałatą i szynką.",
+ i:[["Cukinia",200,"1,3 małej sztuki"],["Zioła prowansalskie",1,"1 szczypta"],["Oliwa z oliwek",10,"2 łyżeczki"],["Papryka czerwona",150,"0,7 dużej sztuki"],["Pomidory krojone z puszki",200,"0,8 szklanki"],["Kurkuma",3,"0,5 łyżeczki"],["Sól",1,"1 szczypta"],["Papryka słodka mielona",2,"0,5 łyżeczki"],["Ser typu feta",60,"0,3 kostki"],["Chleb żytni razowy",35,"1 kromka"],["Masło",5,"1 łyżeczka"],["Sałata zielona",5,"1 liść"],["Szynka wiejska",20,"1 duży plaster"]]},
+{n:27,e:516,b:36.7,f:35.5,w:17.8,d:"+ orzechy włoskie",rx:"Zjedz porcję orzechów.",
+ i:[["Pomidory",200,"1 duża sztuka"],["Oliwa z oliwek",10,"2 łyżeczki"],["Pieprz czarny mielony",2,"2 szczypty"],["Sól morska",2,"2 szczypty"],["Mix sałat",20,"1 garść"],["Ocet jabłkowy",6,"2 łyżeczki"],["Mozzarella light",125,"1 kula"],["Orzechy włoskie",20,"0,7 garści"]]},
+{n:65,c:"D",t:"Kalafior z oliwą, sadzonym jajkiem i maślanką",e:483,b:31.2,f:30.7,w:26.7,
+ i:[["Kalafior",250,"1,3 porcji"],["Jajka",120,"2 średnie sztuki"],["Masło",5,"1 łyżeczka"],["Maślanka naturalna",300,"1,3 szklanki"],["Oliwa z oliwek",10,"2 łyżeczki"]],
+ r:"Jaja usmaż na łyżeczce masła. Kalafiora ugotuj w osolonej wodzie, odcedź i skrop oliwą. Zjedz, popijając maślanką, jogurtem lub kefirem."},
+
+{n:29,e:689,b:52.4,f:21.1,w:70.4,
+ i:[["Pierś z kurczaka",200,"2 porcje"],["Czosnek",5,"1 ząbek"],["Zioła prowansalskie",3,"0,5 łyżeczki"],["Oliwa z oliwek",15,"3 łyżeczki"],["Warzywa chińskie (mrożone)",200,"1,3 porcji"],["Ryż czarny (Targroch)",80,"5,3 łyżki"]]},
+{n:30,e:693,b:49.6,f:30,w:56.3,
+ i:[["Masło",5,"1 łyżeczka"],["Ser żółty",14,"2 łyżeczki (tarty)"],["Ziemniaki",250,"2,1 średniej sztuki"],["Olej rzepakowy",20,"2 łyżki"],["Ogórki kiszone",150,"3 sztuki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",5,"1 łyżeczka"],["Jajka",35,"1 białko",1],["Bułka tarta",10,"1,3 łyżki"],["Pierś z indyka",180,"1,8 porcji"]]},
+{n:31,e:698,b:54.9,f:23.5,w:74.5,d:"+ ziarna słonecznika",rx:"Posyp ziarnami słonecznika.",
+ i:[["Sól",1,"1 szczypta"],["Buraki",200,"2 sztuki"],["Pierś z kurczaka",200,"2 porcje"],["Olej lniany",15,"3 łyżeczki"],["Cytryna (sok)",9,"3 łyżeczki soku"],["Kasza pęczak",70,"0,4 szklanki"],["Słonecznik łuskany",10,"2 łyżeczki"]]},
+{n:32,e:696,b:47.9,f:21.1,w:81.4,
+ i:[["Kapusta biała",150,"3 liście"],["Oliwa z oliwek",15,"3 łyżeczki"],["Natka pietruszki",24,"2 łyżki"],["Mięso mielone z indyka",150,"1,5 porcji"],["Makaron pełnoziarnisty",100,"10 łyżek"]]},
+{n:33,e:709,b:48.1,f:26.5,w:70,d:"+ orzechy włoskie",rx:"Do posiłku zjedz porcję orzechów.",
+ i:[["Sól",1,"1 szczypta"],["Pieprz czarny mielony",3,"0,5 łyżeczki"],["Jajka",18,"0,5 białka",0.5],["Oliwa z oliwek",10,"2 łyżeczki"],["Passata pomidorowa",120,"1,2 porcji"],["Mięso mielone z indyka",150,"1,5 porcji"],["Natka pietruszki",12,"1 łyżka"],["Kasza gryczana biała (Sante)",80,"6,2 łyżki"],["Ogórki kiszone",150,"3 sztuki"],["Orzechy włoskie",15,"0,5 garści"]]},
+{n:34,e:714,b:44.2,f:23.4,w:87.8,
+ i:[["Cebula",25,"0,5 małej sztuki"],["Czosnek",5,"1 ząbek"],["Oliwa z oliwek",5,"1 łyżeczka"],["Passata pomidorowa",30,"2 łyżki"],["Majeranek",1,"1 szczypta"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Liść laurowy",1,"1 liść"],["Ziele angielskie",2,"2 sztuki"],["Papryka słodka mielona",2,"0,5 łyżeczki"],["Kasza gryczana",80,"0,4 szklanki"],["Schab bez kości",150,"1,5 porcji"],["Mąka ziemniaczana",6,"0,5 łyżeczki"],["Sałatka szwedzka Motyl",200,"1,3 porcji"]]},
+{n:35,e:684,b:56.8,f:20,w:78.9,
+ i:[["Pierś z kurczaka",200,"2 porcje"],["Czosnek",5,"1 ząbek"],["Zioła prowansalskie",3,"0,5 łyżeczki"],["Oliwa z oliwek",15,"3 łyżeczki"],["Kalafior",250,"0,3 sztuki"],["Kasza pęczak",85,"0,5 szklanki"]]},
+{n:36,e:700,b:64,f:32.6,w:43,d:"+ grahamka",rx:"Zjedz z porcją pieczywa.",
+ i:[["Pieprz czarny mielony",1,"1 szczypta"],["Sól",1,"1 szczypta"],["Oliwa z oliwek",5,"1 łyżeczka"],["Cebula",75,"1 średnia sztuka"],["Mix sałat",50,"2,5 garści"],["Kapary",10,"1 łyżka"],["Ogórek zielony",50,"1 mała sztuka"],["Udka z kurczaka bez skóry",300,"1,1 dużej sztuki"],["Jogurt naturalny 2%",75,"0,5 małego kubka"],["Majonez Winiary Light",20,"2 łyżeczki"],["Zioła prowansalskie",1,"1 szczypta"],["Bułki grahamki",50,"0,6 sztuki"]]},
+{n:37,e:696,b:42.3,f:25.9,w:77.7,
+ i:[["Makaron pełnoziarnisty",100,"1,4 porcji"],["Cebula",50,"1 mała sztuka"],["Oliwa z oliwek",20,"4 łyżeczki"],["Natka pietruszki",24,"2 łyżki"],["Mięso mielone wołowe",120,"1,2 porcji"],["Kapusta kiszona",120,"1,1 szklanki"]]},
+{n:38,e:707,b:61.5,f:13.1,w:99.8,
+ i:[["Cebula",50,"1 mała sztuka"],["Czosnek",5,"1 ząbek"],["Marchew",50,"1,1 sztuki"],["Groszek zielony mrożony",150,"0,3 opakowania"],["Oliwa z oliwek",5,"1 łyżeczka"],["Mąka ziemniaczana",6,"0,5 łyżeczki"],["Pierś z kurczaka",200,"2 porcje"],["Śmietana 12%",25,"1 łyżka"],["Kasza pęczak",80,"0,4 szklanki"]]},
+{n:39,e:671,b:51.5,f:28.4,w:50.9,
+ i:[["Przyprawa gyros",2,"0,5 łyżeczki"],["Oliwa z oliwek",20,"4 łyżeczki"],["Papryka chili mielona",1,"1 szczypta"],["Ziemniaki",250,"2,1 średniej sztuki"],["Kapusta pekińska",150,"3 liście"],["Polędwiczka wieprzowa",180,"1,8 porcji"],["Jogurt grecki",75,"0,5 opakowania"],["Koperek",4,"1 łyżeczka"]]},
+{n:40,e:704,b:32,f:31.2,w:75.4,
+ i:[["Jajka",40,"2 żółtka",2],["Sól",3,"3 szczypty"],["Czosnek",5,"1 ząbek"],["Natka pietruszki",12,"1 łyżka"],["Cebula",50,"1 mała sztuka"],["Boczek wędzony surowy",30,"3 plastry"],["Makaron pełnoziarnisty",100,"1,4 porcji"],["Oliwa z oliwek",5,"1 łyżeczka"],["Śmietana 12%",25,"1 łyżka"],["Parmezan",10,"2 łyżeczki"]]},
+{n:41,e:695,b:35.6,f:35.9,w:59.7,d:"+ pieczywo",rx:"Zjedz też z pieczywem.",
+ i:[["Kiełbasa z piersi kurczaka (Morliny)",160,"1,3 porcji"],["Surówka Colesław (Vital Fresh)",200,"0,7 opakowania"],["Musztarda",20,"2 łyżeczki"],["Ketchup",10,"1,4 łyżeczki"],["Chleb żytni razowy",70,"2 kromki"]]},
+{n:42,e:694,b:50.6,f:15.6,w:86.4,
+ i:[["Sos słodko-kwaśny Łowicz",150,"1 porcja"],["Pierś z kurczaka",200,"2 porcje"],["Oliwa z oliwek",10,"2 łyżeczki"],["Ryż czarny (Targroch)",80,"0,4 szklanki"]]},
+{n:43,e:711,b:53.4,f:24.8,w:69.7,
+ i:[["Kurkuma",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Sól",1,"1 szczypta"],["Oliwa z oliwek",20,"4 łyżeczki"],["Warzywa na patelnię z przyprawą włoską (Hortex)",200,"0,4 opakowania"],["Kasza gryczana",80,"0,8 woreczka"],["Pierś z indyka",200,"2 porcje"]]},
+{n:44,e:698,b:25.9,f:38.4,w:62.5,d:"+ mieszanka orzechów",rx:"Do posiłku zjedz porcję orzechów.",
+ i:[["Marchew",30,"0,7 sztuki"],["Majeranek",3,"0,5 łyżeczki"],["Zakwas na żurek",120,"0,5 szklanki"],["Seler korzeniowy",30,"0,5 plastra"],["Ziemniaki",200,"3,3 małej sztuki"],["Czosnek",5,"1 ząbek"],["Jajka",120,"2 średnie sztuki"],["Oliwa z oliwek",15,"3 łyżeczki"],["Mieszanka orzechów (Bakalland)",20,"0,8 porcji"]]},
+{n:46,e:698,b:33.2,f:41,w:47.2,d:"+ bagietka",rx:"Zjedz też z porcją pieczywa.",
+ i:[["Camembert",120,"1 opakowanie"],["Żurawina do mięs i serów",20,"2 łyżeczki"],["Sałata rzymska",105,"3 liście"],["Rukola",20,"1 garść"],["Oliwa z oliwek",10,"2 łyżeczki"],["Ocet balsamiczny",6,"2 łyżeczki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Tymianek suszony",1,"1 szczypta"],["Słonecznik łuskany",5,"1 łyżeczka"],["Bagietka pełnoziarnista",60,"0,8 małej sztuki"]]},
+{n:47,e:605,b:45.3,f:18.8,w:70.3,s:3,d:"+ surówka Colesław",rx:"Dodatkowo zjedz porcję surówki.",
+ i:[["Musztarda",30,"3 łyżeczki"],["Pieprz cayenne",1,"1 szczypta"],["Woda",15,"1 łyżka"],["Sól",1,"1 szczypta"],["Cebula",75,"1 średnia sztuka"],["Ogórki konserwowe",100,"2 sztuki"],["Pomidory",130,"1 średnia sztuka"],["Sałata lodowa",120,"3 liście"],["Jogurt grecki",100,"0,7 opakowania"],["Rostbef wołowy",400,"4 porcje"],["Bułki grahamki",300,"3,3 sztuki"],["Jajka",50,"1 mała sztuka",1],["Surówka Colesław (Vital Fresh)",150,"0,5 opakowania"]]},
+{n:66,c:"O",t:"Łazanki z pieczarkami i cebulką, surówka domowa",e:731,b:27.3,f:27.1,w:109.5,
+ i:[["Kapusta biała",200,"4 liście"],["Makaron pełnoziarnisty",100,"1,4 porcji"],["Cebula",50,"1 mała sztuka"],["Oliwa z oliwek",20,"4 łyżeczki"],["Natka pietruszki",24,"2 łyżki"],["Pieczarki",175,"5 dużych sztuk"],["Surówka domowa",150,"1 porcja"]],
+ r:"Makaron ugotuj wg instrukcji na opakowaniu. Kapustę umyj, poszatkuj, duś do miękkości, odcedź. Na patelni rozgrzej oliwę, podsmaż cebulkę i pokrojone pieczarki. Smaż kilka minut. Następnie w większym garnku wymieszaj odcedzoną kapustę, makaron i grzyby z cebulką. Wszystko dokładnie wymieszaj, dopraw solą i pieprzem. Posyp zieleniną. Zjedz z porcją surówki."},
+
+{n:48,e:480,b:20.9,f:33.3,w:26.7,
+ i:[["Parówki z szynki",120,"3 sztuki"],["Masło",3,"0,5 łyżeczki"],["Ketchup",7,"1 łyżeczka"],["Papryka żółta",130,"1 mała sztuka"],["Szczypiorek",5,"1 łyżeczka"],["Chleb graham",30,"1 kromka"]]},
+{n:49,e:486,b:30.8,f:21.6,w:40.8,d:"+ kanapka z szynką",rx:"Zjedz z pieczywem z masłem i chudą szynką.",
+ i:[["Warzywa na patelnię (mrożone)",200,"0,4 opakowania"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Twaróg solankowy z czosnkiem (Jana / Biedronka)",120,"1,3 porcji"],["Oliwa z oliwek",10,"2 łyżeczki"],["Chleb żytni razowy",35,"1 kromka"],["Masło",5,"1 łyżeczka"],["Szynka prasowana",20,"1 duży plaster"]]},
+{n:50,e:471,b:40.9,f:16.1,w:51.5,d:"+ kanapki z masłem i pomidorem",rx:"Zjedz z kanapkami z masłem i pomidorem.",
+ i:[["Udka z kurczaka bez skóry",120,"1,2 porcji"],["Groszek konserwowy",15,"1 łyżka"],["Marchew",40,"0,9 sztuki"],["Pietruszka (korzeń)",30,"0,4 sztuki"],["Żelatyna",10,"2 łyżeczki"],["Ocet jabłkowy",6,"2 łyżeczki"],["Liść laurowy",1,"1 liść"],["Ziele angielskie",1,"1 sztuka"],["Jajka",30,"0,5 średniej sztuki"],["Chleb żytni razowy",70,"2 kromki"],["Masło",5,"1 łyżeczka"],["Pomidory",130,"1 średnia sztuka"]]},
+{n:51,e:498,b:21.3,f:25.8,w:49.5,
+ i:[["Barszcz czerwony (np. Krakus)",300,"1,3 szklanki"],["Uszka z mięsem",180,"1,8 porcji"]]},
+{n:52,e:522,b:32.9,f:22.6,w:55.7,d:"trzy kromki chleba żytniego",
+ i:[["Ser żółty",45,"3 plastry"],["Masło",8,"1,5 łyżeczki"],["Ogórek zielony",50,"1 mała sztuka"],["Sałata zielona",15,"3 liście"],["Indyk z Bobrownik (wędlina)",60,"3 plastry"],["Chleb żytni razowy",105,"3 kromki"]]},
+{n:53,e:502,b:27.9,f:20.6,w:63.3,d:"+ porcja papryki",rx:"Zjedz z porcją świeżej papryki.",
+ i:[["Pieczarki",150,"4,3 dużej sztuki"],["Masło",5,"1 łyżeczka"],["Mozzarella",60,"4 plastry"],["Natka pietruszki",12,"1 łyżka"],["Chleb graham",90,"3 kromki"],["Papryka czerwona",200,"0,9 dużej sztuki"]]},
+{n:54,e:496,b:37.1,f:23.2,w:42.5,d:"+ kabanos z kurczaka",rx:"Zjedz razem z kabanosem drobiowym.",
+ i:[["Tortilla pełnoziarnista",62,"1 sztuka"],["Przecier pomidorowy Podravka (karton)",30,"1,5 łyżki"],["Pieczarki",80,"4 małe sztuki"],["Oliwa z oliwek",5,"1 łyżeczka"],["Oregano suszone",3,"0,5 łyżeczki"],["Szynka prasowana",30,"1,5 dużego plastra"],["Rukola",20,"1 garść"],["Pomidorki koktajlowe",100,"5 sztuk"],["Mozzarella light",45,"3 plastry"],["Kabanosy z kurczaka",45,"1 sztuka"]]},
+{n:56,e:534,b:30,f:34.5,w:29.4,d:"cały camembert, mniej pomidorków",
+ r:"Pomidorki pokrój na połówki, skrop oliwą, posyp przyprawami i ziołami, przemieszaj, na środek połóż cały camembert. Zapiekaj do rozparzenia pomidorków. Pod koniec dodaj liście świeżej bazylii. Wyłóż, zjedz z pieczywem.",
+ i:[["Camembert",120,"1 opakowanie"],["Pomidorki koktajlowe",200,"2 garście"],["Oliwa z oliwek",5,"1 łyżeczka"],["Czosnek",5,"1 ząbek"],["Bazylia świeża",6,"6 listków"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Zioła prowansalskie",3,"0,5 łyżeczki"],["Chleb żytni razowy",35,"1 kromka"]]},
+{n:57,e:475,b:39.4,f:12.3,w:70.6,
+ i:[["Sól morska",2,"2 szczypty"],["Oliwa z oliwek",5,"1 łyżeczka"],["Ogórki kiszone",50,"1 sztuka"],["Sałata zielona",10,"2 liście"],["Bób mrożony",250,"1,5 szklanki"],["Indyk z Bobrownik (wędlina)",80,"4 plastry"],["Chleb żytni razowy",70,"2 kromki"],["Masło",5,"1 łyżeczka"]]},
+{n:58,e:355,b:32.1,f:18.6,w:14.6,s:2,d:"+ pieczywo z masłem",rx:"Zjedz z pieczywem (dwie kromki chleba żytniego).",
+ i:[["Pierś z kurczaka",260,"2,6 porcji"],["Seler konserwowy (Rolnik Wyborny)",200,"2 porcje"],["Oliwa z oliwek",15,"3 łyżeczki"],["Sezam",10,"2 łyżeczki"],["Ocet balsamiczny",6,"2 łyżeczki"],["Sól",1,"1 szczypta"],["Pieprz czarny mielony",1,"1 szczypta"],["Papryka słodka mielona",1,"1 szczypta"],["Kukurydza konserwowa",30,"2 łyżki"],["Zioła prowansalskie",3,"0,5 łyżeczki"],["Majonez Winiary Light",20,"2 łyżeczki"],["Jogurt naturalny 2%",50,"2 łyżki"],["Kapusta pekińska",50,"1 liść"],["Masło",5,"1 łyżeczka"]],
+ x:[["Chleb żytni razowy",70,"2 kromki"]]},
+{n:59,e:493,b:29.8,f:28.8,w:32.7,d:"dwie kanapki",
+ i:[["Śmietana 12%",25,"1 łyżka"],["Jajka",120,"2 średnie sztuki"],["Chleb graham",60,"2 kromki"],["Masło",5,"1 łyżeczka"],["Ser żółty",30,"2 plastry"],["Pomidory",40,"2 plastry"],["Sałata zielona",10,"2 liście"]]},
+{n:60,e:504,b:29.5,f:21.5,w:58.9,
+ warn:"W jadłospisie Miłosza przy ogórku kiszonym wpisano 1150 g (23 sztuki). To wygląda na pomyłkę, więc na liście liczę 1 ogórek (50 g), tak jak u Sandry. Kaloryczność 504 kcal jest przepisana z jadłospisu bez zmian.",
+ i:[["Chleb żytni razowy",70,"2 kromki"],["Masło",5,"1 łyżeczka"],["Ogórki kiszone",50,"1 sztuka"],["Sałata zielona",15,"3 liście"],["Szczypiorek",10,"1 łyżka"],["Szynka chłopska",40,"2 duże plastry"],["Camembert",30,"2 plastry"]]},
+{n:61,e:547,b:20.3,f:26.4,w:58.9,d:"cała mała bagietka",
+ r:"Małą bagietkę przekrój i skrop oliwą. Pomidory suszone drobno pokrój. Na każdą kromkę połóż plastry sera i pokrojone pomidory. Przypraw ziołami. Zapiecz w piekarniku ok. 10 min w 180 stopniach.",
+ i:[["Oregano suszone",1,"1 szczypta"],["Mozzarella",50,"3,3 plastra"],["Pomidory suszone",30,"2 średnie sztuki"],["Bagietka pełnoziarnista",80,"1 mała sztuka"],["Oliwa z oliwek",10,"2 łyżeczki"],["Papryka żółta",130,"1 mała sztuka"]]},
+{n:62,e:526,b:42.1,f:25.6,w:38.6,d:"+ orzechy nerkowca",
+ i:[["Pierś z kurczaka",150,"1,5 porcji"],["Sałata rzymska",70,"2 liście"],["Czosnek",3,"0,5 ząbka"],["Jogurt naturalny 2%",25,"1 łyżka"],["Oliwa z oliwek",15,"3 łyżeczki"],["Oregano suszone",1,"1 szczypta"],["Pomidorki koktajlowe",100,"1 garść"],["Tymianek suszony",1,"0,5 szczypty"],["Ocet jabłkowy",6,"2 łyżeczki"],["Bułki grahamki",40,"0,5 sztuki"],["Orzechy nerkowca",15,"1 łyżka"],["Ogórek zielony",50,"1 mała sztuka"]]},
+{n:67,c:"K",t:"Sałatka z kurczakiem i warzywami w sosie jogurtowo-majonezowym, pieczywo",e:503,b:45.5,f:16.6,w:49.8,p:15,
+ i:[["Zioła prowansalskie",3,"0,5 łyżeczki"],["Pieprz czarny mielony",2,"2 szczypty"],["Sól",3,"3 szczypty"],["Ogórek zielony",100,"0,8 średniej sztuki"],["Pierś z kurczaka",170,"1,7 porcji"],["Pomidory",100,"0,8 średniej sztuki"],["Oliwa z oliwek",5,"1 łyżeczka"],["Mix sałat",20,"1 garść"],["Ocet jabłkowy",3,"1 łyżeczka"],["Majonez Winiary Light",20,"2 łyżeczki"],["Jogurt naturalny 2%",50,"2 łyżki"],["Chleb żytni razowy",70,"2 kromki"]],
+ r:"Fileta pokrój w kostkę, przypraw ziołami, solą i pieprzem, podsmaż na łyżeczce oliwy. Pokrój warzywa, ułóż na sałacie. Do warzyw dodaj podsmażonego fileta. Jogurt wymieszaj z majonezem, octem i przyprawami, skrop sałatkę. Zjedz z pieczywem."}
+];
+/* ===================== DANE KONIEC ===================== */
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const num = x => String(x).replace(".", ",");
+function plural(n, one, few, many){
+  if (n === 1) return one;
+  const d = n % 10, h = n % 100;
+  return (d >= 2 && d <= 4 && !(h >= 12 && h <= 14)) ? few : many;
+}
+function fmtG(g){
+  if (g >= 1000) return num(Math.round(g / 10) / 100) + " kg";
+  return num(Math.round(g * 10) / 10) + " g";
+}
+const norm = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ł/g, "l");
+const variants = d => ["S","M"].filter(p => d[p]);
+
+/* ---------- przepisy dodane w aplikacji ----------
+   Zapisywane w tej przeglądarce. Przepis z numerem istniejącego posiłku
+   dodaje albo zastępuje wersję danej osoby; nowy numer tworzy nowy posiłek. */
+const CUSTOM_KEY = "jadlospis-wlasne-v1";
+let CUSTOM = { recipes:[], products:{} };
+try {
+  const c = JSON.parse(localStorage.getItem(CUSTOM_KEY) || "null");
+  if (c && Array.isArray(c.recipes)) CUSTOM = { recipes:c.recipes, products:c.products || {} };
+} catch (e) {}
+function saveCustom(){
+  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(CUSTOM)); return true; } catch (e) { return false; }
+}
+
+const CATALOG = {};
+function buildCatalog(){
+  for (const k of Object.keys(CATALOG)) delete CATALOG[k];
+  for (const [c, arr] of Object.entries(CATALOG_SRC)) arr.forEach(p => { CATALOG[p] = c; });
+  for (const [p, c] of Object.entries(CUSTOM.products)) if (!CATALOG[p]) CATALOG[p] = c;
+}
+
+/* połączenie obu jadłospisów (i przepisów dodanych w aplikacji) w jedną listę */
+const DISHES = [], BYID = {};
+function buildDishes(){
+  DISHES.length = 0;
+  for (const k of Object.keys(BYID)) delete BYID[k];
+  const SMAP = Object.fromEntries(MEALS_S.map(m => [m.n, m]));
+  const MMAP = Object.fromEntries(MEALS_M.map(m => [m.n, m]));
+  for (const n of [...new Set([...MEALS_S, ...MEALS_M].map(m => m.n))]) {
+    const s = SMAP[n], m = MMAP[n], base = s || m;
+    const d = { n, c: base.c, t: base.t, p: (s && s.p) || (m && m.p), shared: SHARED.includes(n) };
+    if (s) d.S = { e:s.e, b:s.b, f:s.f, w:s.w, s:s.s || 1, i:s.i, r:s.r };
+    if (m) d.M = { e:m.e, b:m.b, f:m.f, w:m.w, s:m.s || 1, i:(m.i === "S" ? s.i : m.i), x:m.x, d:m.d, warn:m.warn, r:m.r, rx:m.rx };
+    DISHES.push(d); BYID[n] = d;
+  }
+  for (const cr of CUSTOM.recipes) {
+    let d = BYID[cr.n];
+    if (!d) { d = { n:cr.n, c:cr.c, t:cr.t, p:cr.p || null, shared:false, custom:true }; DISHES.push(d); BYID[cr.n] = d; }
+    d[cr.person] = { e:cr.e, b:cr.b, f:cr.f, w:cr.w, s:cr.s || 1, i:cr.i, r:cr.r || "", custom:true };
+    if (cr.p && !d.p) d.p = cr.p;
+  }
+  DISHES.sort((a, b) => a.n - b.n);
+  DISHES.forEach(d => {
+    const words = [d.n, d.t];
+    variants(d).forEach(p => { d[p].i.forEach(x => words.push(x[0])); (d[p].x || []).forEach(x => words.push(x[0])); if (d[p].d) words.push(d[p].d); });
+    d._s = norm(words.join(" "));
+  });
+}
+buildCatalog();
+buildDishes();
+
+const dotHTML = who => who === "B" ? '<span class="dots"><i class="dot S"></i><i class="dot M"></i></span>' : `<i class="dot ${who}"></i>`;
+const pieceCount = (prod, g, pcs) => PIECES[prod] ? (pcs != null ? pcs : g / PIECES[prod]) : 0;
+
+const RING = '<svg class="ring" viewBox="0 0 64 52" aria-hidden="true"><path pathLength="1" d="M12 31C7 17 22 5 37 6c15 1 23 13 19 27-4 12-22 17-37 11C10 40 7 31 13 21"/></svg>';
+const CHEV = '<svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5l4 3.5 4-3.5"/></svg>';
+const ARROW = { 1:'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h7.5M6.5 3l3 3-3 3"/></svg>', 2:'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M10 6H2.5M5.5 3l-3 3 3 3"/></svg>' };
+const DAYS = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
+const DAYS_FULL = ["Poniedziałek","Wtorek","Środa","Czwartek","Piątek","Sobota","Niedziela"];
+const DAYS_AT = ["w poniedziałek","we wtorek","w środę","w czwartek","w piątek","w sobotę","w niedzielę"];
+const LISTS = [1, 2];
+
+/* ---------- stan ---------- */
+const KEY = "jadlospis-zakupy-v2";
+/* trip: części produktu (produkt|dzień) przeniesione na listę 2; tripDay: dzień zakupów każdej listy;
+   list: otwarta lista; dayFilter: dni podświetlone filtrem; checked: odhaczone, klucz lista|produkt */
+const state = { sel:{}, days:{}, checked:{}, trip:{}, tripDay:{}, list:1, dayFilter:[], collapsed:{}, spices:false, type:"all", q:"", onlySel:false, who:"all" };
+const validDay = x => Number.isInteger(x) && x >= 0 && x < 7;
+try {
+  const s = JSON.parse(localStorage.getItem(KEY) || "null");
+  if (s) {
+    state.sel = s.sel || {}; state.days = s.days || {}; state.spices = !!s.spices;
+    state.trip = s.trip || {}; state.tripDay = s.tripDay || {}; state.list = s.list === 2 ? 2 : 1;
+    state.dayFilter = Array.isArray(s.dayFilter) ? [...new Set(s.dayFilter.filter(validDay))].sort((a, b) => a - b) : [];
+    for (const k of Object.keys(TYPES)) if (s.collapsed && s.collapsed[k] === true) state.collapsed[k] = true;
+    for (const [k, v] of Object.entries(s.checked || {})) if (v) state.checked[/^\d\|/.test(k) ? k : "1|" + k] = true;
+  } else {
+    const old = JSON.parse(localStorage.getItem("jadlospis-zakupy-v1") || "null");
+    if (old && old.counts) for (const k of Object.keys(old.counts)) if (old.counts[k] > 0 && BYID[k] && BYID[k].S) state.sel[k] = "S";
+  }
+} catch (e) {}
+for (const k of Object.keys(state.sel)) if (!BYID[k]) delete state.sel[k];
+for (const k of Object.keys(state.days)) {
+  const v = state.days[k];
+  if (!state.sel[k] || !Array.isArray(v)) { delete state.days[k]; continue; }
+  state.days[k] = [...new Set(v.filter(validDay))].sort((a, b) => a - b);
+  if (!state.days[k].length) delete state.days[k];
+}
+for (const L of LISTS) if (!validDay(state.tripDay[L])) delete state.tripDay[L];
+function save(){
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ sel:state.sel, days:state.days, checked:state.checked, trip:state.trip, tripDay:state.tripDay, list:state.list, dayFilter:state.dayFilter, collapsed:state.collapsed, spices:state.spices }));
+  } catch (e) {}
+}
+const openSrc = new Set();
+const freqText = ds => ds.length > 1 ? `${ds.length} razy w tygodniu` : "";
+
+/* ---------- przepisy ---------- */
+const rowEl = {}, sectionEl = {};
+function personLine(d, p){
+  const v = d[p];
+  if (!v) return "";
+  const parts = [
+    `<span class="who ${p}">${PEOPLE[p].name}</span>`,
+    `<span class="kcal">${v.e} kcal</span>`,
+    `<span><abbr title="białko">B</abbr> ${num(v.b)} g</span>`,
+    `<span><abbr title="tłuszcze">T</abbr> ${num(v.f)} g</span>`,
+    `<span><abbr title="węglowodany">WO</abbr> ${num(v.w)} g</span>`
+  ];
+  if (v.s > 1) parts.push(`<span class="serv">przepis na ${v.s} ${plural(v.s,"porcję","porcje","porcji")}</span>`);
+  if (v.d) parts.push(`<span class="extra">${esc(v.d)}</span>`);
+  if (v.custom) parts.push(`<span class="own">dodany przez Ciebie</span>`);
+  return `<p class="pl">${parts.join("")}</p>`;
+}
+function pickHTML(d){
+  const cur = state.sel[d.n];
+  const btn = (who, label, on) => `<button type="button" class="pk" data-act="pick" data-id="${d.n}" data-who="${who}" aria-pressed="${cur === who}"${on ? "" : " disabled"}>${dotHTML(who)}${label}</button>`;
+  return `<div class="pick" role="group" aria-label="Kto je przepis ${d.n}">`
+    + btn("B", "Obydwoje", !!(d.S && d.M))
+    + btn("S", PEOPLE.S.name, !!d.S)
+    + btn("M", PEOPLE.M.name, !!d.M)
+    + `</div>`;
+}
+function daysHTML(d){
+  const cur = state.sel[d.n], ds = state.days[d.n] || [];
+  return `<div class="days"${cur ? "" : " hidden"} role="group" aria-label="Dni tygodnia dla przepisu ${d.n}">
+    <span class="dlab">Dni</span>${DAYS.map((x, i) => `<button type="button" class="dy" data-act="day" data-id="${d.n}" data-day="${i}" aria-pressed="${ds.includes(i)}" title="${DAYS_FULL[i]}" aria-label="${DAYS_FULL[i]}">${x}</button>`).join("")}
+    <span class="freq">${freqText(ds)}</span>
+    <button type="button" class="clear-one" data-act="clearOne" data-id="${d.n}">Wyczyść</button>
+  </div>`;
+}
+function mealRow(d){
+  const cur = state.sel[d.n];
+  return `<article class="meal${cur ? " who-" + cur : ""}" data-id="${d.n}" id="m${d.n}">
+  <div class="num" aria-hidden="true"><span>${d.n}</span>${RING}</div>
+  <div class="body">
+    <h3><button class="title" type="button" data-act="toggle" data-id="${d.n}" aria-expanded="false" aria-controls="d${d.n}"><span class="sr">Przepis ${d.n}: </span>${esc(d.t)}${CHEV}</button></h3>
+    <div class="people">${personLine(d, "S")}${personLine(d, "M")}</div>
+  </div>
+  ${pickHTML(d)}
+  ${daysHTML(d)}
+  <div class="detail" id="d${d.n}" hidden></div>
+</article>`;
+}
+function detailHTML(d){
+  const ps = variants(d);
+  const order = [], rows = new Map();
+  for (const p of ps) for (const [prod, g, meas] of d[p].i) {
+    if (!rows.has(prod)) { rows.set(prod, {}); order.push(prod); }
+    const r = rows.get(prod);
+    if (r[p]) { r[p].g += g; r[p].meas += ", " + meas; } else r[p] = { g, meas };
+  }
+  const head = ps.length > 1
+    ? `<thead><tr><th scope="col"><span class="sr">Składnik</span></th>${ps.map(p => `<th scope="col" class="${p}">${PEOPLE[p].name}</th>`).join("")}</tr></thead>`
+    : "";
+  const body = order.map(prod => {
+    const r = rows.get(prod);
+    return `<tr><td>${esc(prod)}</td>${ps.map(p => r[p]
+      ? `<td class="v">${num(r[p].g)} g<small>${esc(r[p].meas)}</small></td>`
+      : `<td class="v none" aria-label="brak">–</td>`).join("")}</tr>`;
+  }).join("");
+  const notes = [];
+  const batch = ps.filter(p => d[p].s > 1);
+  if (batch.length) notes.push(`<p class="note">Ilości na cały przepis: ${batch.map(p => `${PEOPLE[p].name} ${d[p].s} ${plural(d[p].s,"porcja","porcje","porcji")}`).join(", ")}.</p>`);
+  for (const p of ps) if (d[p].x) notes.push(`<p class="note">${PEOPLE[p].name} do każdej porcji: ${d[p].x.map(([prod, g, meas]) => `${esc(prod)} ${num(g)} g (${esc(meas)})`).join(", ")}.</p>`);
+  for (const p of ps) if (d[p].warn) notes.push(`<p class="warn">${esc(d[p].warn)}</p>`);
+
+  const rec = [];
+  const main = d.S ? d.S.r : d.M.r;
+  rec.push(`<p>${esc(main)}</p>`);
+  if (d.S && d.M) {
+    if (d.M.r) rec.push(`<p><b class="M">Wersja ${PEOPLE.M.gen}:</b> ${esc(d.M.r)}</p>`);
+    else if (d.M.rx) rec.push(`<p><b class="M">${PEOPLE.M.name} dodatkowo:</b> ${esc(d.M.rx)}</p>`);
+  }
+  return `<div><h4>Składniki</h4>${notes.join("")}<table class="ing">${head}<tbody>${body}</tbody></table></div>
+  <div class="recipe"><h4>Przygotowanie${d.p ? ` (${d.p} min)` : ""}</h4>${rec.join("")}</div>`;
+}
+function buildMeals(){
+  let html = "";
+  for (const [k, label] of Object.entries(TYPES)) {
+    const ds = DISHES.filter(d => d.c === k);
+    const open = !state.collapsed[k];
+    html += `<section class="type${open ? "" : " collapsed"}" data-type="${k}" aria-labelledby="h-${k}">
+      <div class="banner"><h2 id="h-${k}"><button type="button" class="sec-toggle" data-act="sec" data-type="${k}" aria-expanded="${open}" aria-controls="rows-${k}">${SEC_CHEV}${label}</button></h2><span class="cnt" id="cnt-${k}"></span></div>
+      <div class="rows" id="rows-${k}"${open ? "" : " hidden"}>${ds.map(mealRow).join("")}</div>
+    </section>`;
+  }
+  const host = $("#sections");
+  host.innerHTML = html;
+  host.querySelectorAll(".meal").forEach(el => { rowEl[el.dataset.id] = el; });
+  host.querySelectorAll("section.type").forEach(el => { sectionEl[el.dataset.type] = el; });
+}
+/* zwijanie kategorii i liczniki w nagłówkach */
+const SEC_CHEV = '<svg class="sec-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5l4 3.5 4-3.5"/></svg>';
+function setSection(k, open){
+  if (open) delete state.collapsed[k]; else state.collapsed[k] = true;
+  const sec = sectionEl[k];
+  if (!sec) return;
+  sec.classList.toggle("collapsed", !open);
+  sec.querySelector(".rows").hidden = !open;
+  sec.querySelector(".sec-toggle").setAttribute("aria-expanded", String(open));
+}
+function expandVisible(){
+  for (const k of Object.keys(TYPES)) if (state.collapsed[k] && !sectionEl[k].hidden) setSection(k, true);
+  save();
+}
+function updateSectionCounts(){
+  for (const k of Object.keys(TYPES)) {
+    const ds = DISHES.filter(d => d.c === k), el = document.getElementById("cnt-" + k);
+    if (!el) continue;
+    const vis = ds.filter(d => rowEl[d.n] && !rowEl[d.n].hidden).length;
+    const sel = ds.filter(d => state.sel[d.n]).length;
+    const total = `${ds.length} ${plural(ds.length,"przepis","przepisy","przepisów")}`;
+    el.innerHTML = (vis < ds.length ? `${vis} z ${total}` : total) + (sel ? `, <span class="sel-n">wybrane: ${sel}</span>` : "");
+  }
+}
+function syncControls(){
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.type === state.type)));
+  $("#q").value = state.q;
+  $("#onlySel").checked = state.onlySel;
+  $("#spices").checked = state.spices;
+  $("#whoFilter").value = state.who;
+}
+function applyFilter(){
+  const words = norm(state.q.trim()).split(/\s+/).filter(Boolean);
+  let shown = 0;
+  for (const k of Object.keys(TYPES)) {
+    let any = false;
+    for (const d of DISHES) {
+      if (d.c !== k) continue;
+      const ok = (state.type === "all" || state.type === k)
+        && (state.who === "all" || !!d[state.who])
+        && words.every(w => d._s.includes(w))
+        && (!state.onlySel || !!state.sel[d.n]);
+      rowEl[d.n].hidden = !ok;
+      if (ok) { any = true; shown++; }
+    }
+    sectionEl[k].hidden = !any;
+  }
+  updateSectionCounts();
+  const nr = $("#noResults");
+  nr.hidden = shown > 0;
+  nr.textContent = state.onlySel && !words.length
+    ? "Nie wybrano jeszcze żadnego posiłku. Odznacz „Tylko wybrane”, żeby zobaczyć wszystkie przepisy."
+    : "Żaden przepis nie pasuje do wyszukiwania. Zmień frazę albo wybierz „Wszystkie”.";
+}
+function updateRow(n){
+  const el = rowEl[n], cur = state.sel[n], ds = state.days[n] || [];
+  el.classList.remove("who-S", "who-M", "who-B");
+  if (cur) el.classList.add("who-" + cur);
+  el.querySelectorAll(".pk").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.who === cur)));
+  const box = el.querySelector(".days");
+  box.hidden = !cur;
+  box.querySelectorAll(".dy").forEach(b => b.setAttribute("aria-pressed", String(ds.includes(+b.dataset.day))));
+  box.querySelector(".freq").textContent = freqText(ds);
+}
+function afterChange(n){
+  updateRow(n);
+  save();
+  renderList();
+  if (state.onlySel) applyFilter();
+}
+function setPick(n, who){
+  if (state.sel[n] === who) { delete state.sel[n]; delete state.days[n]; }
+  else state.sel[n] = who;
+  afterChange(n);
+}
+function toggleDay(n, i){
+  const ds = new Set(state.days[n] || []);
+  if (ds.has(i)) ds.delete(i); else ds.add(i);
+  if (ds.size) state.days[n] = [...ds].sort((a, b) => a - b); else delete state.days[n];
+  afterChange(n);
+}
+function clearOne(n){
+  delete state.sel[n]; delete state.days[n];
+  afterChange(n);
+  const first = rowEl[n].querySelector(".pk:not(:disabled)");
+  if (first) first.focus();
+}
+
+/* ---------- lista zakupów ---------- */
+/* Dni, w które trzeba ugotować przepis: przy przepisie na kilka porcji
+   nowy garnek liczony jest dopiero wtedy, gdy poprzedni się skończy. */
+function cookDays(dayList, rate){
+  const out = [];
+  let used = 0;
+  for (const day of dayList) {
+    const left = Math.ceil(used - 1e-9) - used;
+    if (left < rate - 1e-9) out.push(day);
+    used += rate;
+  }
+  return out;
+}
+/* Każdy produkt dzieli się na części według dnia ("x" = bez dnia).
+   Każdą część można przenieść na drugą listę zakupów. */
+const chunkKey = day => day === null ? "x" : String(day);
+const keyLabel = k => k === "x" ? "bez dnia" : DAYS[+k];
+const keyOrder = k => k === "x" ? 7 : +k;
+const listOf = (prod, k) => state.trip[prod + "|" + k] === 2 ? 2 : 1;
+const tripLabel = L => state.tripDay[L] != null ? `Zakupy ${DAYS[state.tripDay[L]]}` : `Lista ${L}`;
+const tripLong = L => state.tripDay[L] != null ? `zakupy ${DAYS_AT[state.tripDay[L]]}` : `lista ${L}`;
+const qtyOf = (prod, g, pcs) => PIECES[prod] ? `${Math.ceil(pcs - 1e-9)} szt.` : fmtG(g);
+const filterLabel = () => state.dayFilter.length ? state.dayFilter.map(i => DAYS[i]).join(", ") : "wszystkie";
+
+function computeList(){
+  const items = new Map();
+  const picks = [];
+  const add = (prod, g, pcs, days, src) => {
+    const cat = CATALOG[prod] || "other";
+    if (cat === "skip") return;
+    let it = items.get(prod);
+    if (!it) { it = { p:prod, cat, byDay:new Map() }; items.set(prod, it); }
+    for (const day of days) {
+      const k = chunkKey(day);
+      let c = it.byDay.get(k);
+      if (!c) { c = { g:0, pcs:0, src:[] }; it.byDay.set(k, c); }
+      c.g += g; c.pcs += pcs; c.src.push(src);
+    }
+  };
+  for (const d of DISHES) {
+    const who = state.sel[d.n];
+    if (!who) continue;
+    const ps = (who === "B" ? ["S","M"] : [who]).filter(p => d[p]);
+    if (!ps.length) continue;
+    const days = state.days[d.n] || [];
+    const dayList = days.length ? days : [null];
+    picks.push({ d, who, ps, days });
+    if (d.shared && ps.length > 1) {
+      const cd = cookDays(dayList, ps.reduce((a, p) => a + 1 / d[p].s, 0));
+      const mx = new Map();
+      for (const p of ps) for (const [prod, g, meas, pcs] of d[p].i) {
+        const cur = mx.get(prod);
+        if (!cur || g > cur.g) mx.set(prod, { g, meas, pcs: pieceCount(prod, g, pcs) });
+      }
+      for (const [prod, v] of mx) add(prod, v.g, v.pcs, cd, { d, who:"B", g:v.g, meas:v.meas, note:"wspólny przepis" });
+    } else {
+      for (const p of ps) {
+        const cd = cookDays(dayList, 1 / d[p].s);
+        for (const [prod, g, meas, pcs] of d[p].i) add(prod, g, pieceCount(prod, g, pcs), cd, { d, who:p, g, meas });
+      }
+    }
+    for (const p of ps) for (const [prod, g, meas, pcs] of (d[p].x || []))
+      add(prod, g, pieceCount(prod, g, pcs), dayList, { d, who:p, g, meas, note:"do porcji" });
+  }
+  const r = { items:[...items.values()], picks, hasDays: picks.some(x => x.days.length) };
+  r.filtering = r.hasDays && state.dayFilter.length > 0;
+  r.views = { 1:viewFor(r.items, 1, r.filtering), 2:viewFor(r.items, 2, r.filtering) };
+  return r;
+}
+/* produkty jednej listy: tylko części, które są na tej liście; part/hit = dni z filtra */
+function viewFor(items, L, filtering){
+  const filt = filtering ? new Set(state.dayFilter.map(String)) : new Set();
+  const sum = arr => ({ g:arr.reduce((a, [, c]) => a + c.g, 0), pcs:arr.reduce((a, [, c]) => a + c.pcs, 0) });
+  const out = [];
+  for (const it of items) {
+    const chunks = [...it.byDay].filter(([k]) => listOf(it.p, k) === L).sort((a, b) => keyOrder(a[0]) - keyOrder(b[0]));
+    if (!chunks.length) continue;
+    const sel = chunks.filter(([k]) => filt.has(k));
+    out.push({ it, chunks, all:sum(chunks), part:sum(sel), hit:sel.length > 0 });
+  }
+  return out;
+}
+const shown = view => view.filter(v => state.spices || v.it.cat !== "spice");
+
+function itemHTML(v, L, hasDays, filtering){
+  const it = v.it, ck = L + "|" + it.p;
+  const done = !!state.checked[ck], open = openSrc.has(ck);
+  const other = L === 1 ? 2 : 1, td = state.tripDay[L];
+  const fset = new Set(state.dayFilter.map(String));
+  const chips = hasDays ? `<div class="when">${v.chunks.map(([k, c]) => {
+    const q = qtyOf(it.p, c.g, c.pcs);
+    const late = td != null && k !== "x" && +k < td;
+    const on = filtering && fset.has(k);
+    return `<span class="dchip${late ? " late" : ""}${on ? " on" : ""}"${late ? ` title="Potrzebne ${DAYS_AT[+k]}, a te zakupy są ${DAYS_AT[td]}"` : ""}><b>${keyLabel(k)}</b> ${q}`
+      + `<button type="button" class="mv" data-act="move" data-p="${esc(it.p)}" data-k="${k}" title="Przenieś na: ${tripLabel(other)}" aria-label="Przenieś ${esc(it.p)}, ${keyLabel(k)} ${q}, na: ${tripLabel(other)}">${ARROW[L]}</button></span>`;
+  }).join("")}</div>` : "";
+  const total = qtyOf(it.p, v.all.g, v.all.pcs);
+  const partQ = qtyOf(it.p, v.part.g, v.part.pcs);
+  const qty = filtering && v.hit && partQ !== total ? `${partQ}<small>z ${total}</small>` : total;
+  const src = v.chunks.flatMap(([k, c]) => c.src.map(s =>
+    `<li><span class="mt" title="${esc(s.d.t)}">${hasDays ? `<b>${keyLabel(k)}</b> ` : ""}${s.d.n}. ${esc(s.d.t)}</span><span class="sq">${dotHTML(s.who)}${fmtG(s.g)} (${esc(s.meas)}${s.note ? ", " + s.note : ""})</span></li>`
+  )).join("");
+  return `<li class="it${done ? " done" : ""}${filtering && v.hit ? " hit" : ""}" data-ck="${esc(ck)}">
+    <label><input type="checkbox" data-ck="${esc(ck)}"${done ? " checked" : ""}><span class="name">${esc(it.p)}</span><span class="qty">${qty}</span></label>
+    <button class="why" type="button" data-act="why" aria-expanded="${open}">skąd?</button>
+    ${chips}
+    <ul class="src"${open ? "" : " hidden"}>${src}</ul>
+  </li>`;
+}
+function countFor(picks, p){ return picks.filter(x => x.ps.includes(p)).length; }
+function mealsLine(picks, p){ return picks.filter(x => x.ps.includes(p)).map(x => x.d.n).join(", "); }
+function planGroups(picks){
+  if (!picks.some(x => x.days.length)) return [{ label:"", list:picks }];
+  const groups = DAYS.map((x, i) => ({ label:x, full:DAYS_FULL[i], list:picks.filter(p => p.days.includes(i)) })).filter(g => g.list.length);
+  const undated = picks.filter(p => !p.days.length);
+  if (undated.length) groups.push({ label:"Bez dnia", full:"Bez przypisanego dnia", list:undated });
+  return groups;
+}
+function chipHTML(x){
+  const label = x.who === "B" ? "obydwoje" : PEOPLE[x.who].name;
+  return `<button class="chip who-${x.who}" type="button" data-act="goto" data-id="${x.d.n}" title="${esc(x.d.t)} (${label})">${x.d.n}${dotHTML(x.who)}</button>`;
+}
+function renderSummary(r){
+  const L = state.list, cur = shown(r.views[L]);
+  const done = cur.filter(v => state.checked[L + "|" + v.it.p]).length;
+  const cS = countFor(r.picks, "S"), cM = countFor(r.picks, "M");
+  let line2 = `${tripLabel(L)}: ${cur.length} ${plural(cur.length,"produkt","produkty","produktów")}` + (done ? `, kupione ${done} z ${cur.length}` : "") + ".";
+  if (r.filtering) {
+    const hits = cur.filter(v => v.hit).length;
+    line2 += ` Na ${filterLabel()}: ${hits} ${plural(hits,"produkt","produkty","produktów")}.`;
+  }
+  $("#sum").innerHTML = r.picks.length
+    ? `<span class="S">${PEOPLE.S.name}</span> ${cS} ${plural(cS,"posiłek","posiłki","posiłków")}, <span class="M">${PEOPLE.M.name}</span> ${cM} ${plural(cM,"posiłek","posiłki","posiłków")}.<br>${line2}`
+    : "Nic jeszcze nie wybrano.";
+  let left = 0;
+  for (const l of LISTS) left += shown(r.views[l]).filter(v => !state.checked[l + "|" + v.it.p]).length;
+  $("#fab").hidden = !r.picks.length;
+  $("#fabN").textContent = `(${left})`;
+  document.querySelectorAll(".lt").forEach(b => { b.querySelector(".n").textContent = shown(r.views[+b.dataset.list]).length; });
+}
+function renderDayFilter(r){
+  const box = $("#dayFilter");
+  box.hidden = !r.hasDays || !r.picks.length;
+  if (box.hidden) return;
+  box.classList.toggle("active", r.filtering);
+  $("#dayFilterLabel").textContent = filterLabel();
+  const cur = shown(r.views[state.list]);
+  const counts = DAYS.map((x, i) => cur.filter(v => v.chunks.some(([k]) => k === String(i))).length);
+  box.querySelectorAll("input[data-fday]").forEach(inp => {
+    const i = +inp.dataset.fday;
+    inp.checked = state.dayFilter.includes(i);
+    const lab = inp.closest("label");
+    lab.classList.toggle("none", !counts[i]);
+    lab.querySelector(".n").textContent = counts[i] ? `(${counts[i]})` : "";
+  });
+  box.querySelector("[data-act=fclear]").hidden = !r.filtering;
+}
+function renderList(){
+  const r = computeList();
+  const { picks, hasDays, filtering } = r;
+  const L = state.list;
+
+  $("#plan").innerHTML = picks.length ? planGroups(picks).map(g =>
+    `<div class="plan-row${g.label ? "" : " nolabel"}">${g.label ? `<span class="plan-day" title="${g.full}">${g.label}</span>` : ""}<div class="chips">${g.list.map(chipHTML).join("")}</div></div>`
+  ).join("") : "";
+  const groups = planGroups(picks);
+  const planTxt = !picks.length ? ""
+    : groups[0].label
+      ? groups.map(g => `${g.label}: ${g.list.map(x => x.d.n).join(", ")}`).join("; ")
+      : ["S","M"].map(p => { const l = mealsLine(picks, p); return l ? `Posiłki ${PEOPLE[p].gen}: ${l}` : ""; }).filter(Boolean).join(". ");
+  $("#printMeals").textContent = picks.length ? `${tripLabel(L)}. ${filtering ? `Na: ${filterLabel()}. ` : ""}${planTxt}` : "";
+
+  /* zakładki list i dzień zakupów */
+  $("#lists").hidden = !picks.length;
+  $("#lists").innerHTML = LISTS.map(l => `<button type="button" class="lt" data-act="list" data-list="${l}" aria-pressed="${l === L}">${tripLabel(l)} <span class="n"></span></button>`).join("");
+  $("#trip").hidden = !picks.length;
+  $("#tripDay").innerHTML = `<option value="">nie ustawiony</option>` + DAYS_FULL.map((x, i) => `<option value="${i}">${x}</option>`).join("");
+  $("#tripDay").value = state.tripDay[L] != null ? String(state.tripDay[L]) : "";
+  const bulk = $("#bulk");
+  bulk.hidden = !(L === 2 && hasDays && state.tripDay[2] != null);
+  if (!bulk.hidden) bulk.textContent = `Przenieś tu wszystko na dni od ${DAYS[state.tripDay[2]]}`;
+
+  renderSummary(r);
+  renderDayFilter(r);
+
+  const cur = shown(r.views[L]);
+  const spiceN = r.views[L].filter(v => v.it.cat === "spice").length;
+  $("#spicesLabel").textContent = spiceN ? `Pokaż przyprawy (${spiceN})` : "Pokaż przyprawy";
+  ["#copyBtn","#printBtn","#shareBtn"].forEach(id => { $(id).disabled = !cur.length; });
+  ["#clearBtn","#clearTop"].forEach(id => { $(id).disabled = !picks.length; });
+
+  const listEl = $("#list");
+  listEl.classList.toggle("filtering", filtering);
+  if (!picks.length) {
+    listEl.innerHTML = `<p class="empty">Zaznacz przy przepisie „Obydwoje”, „${PEOPLE.S.name}” albo „${PEOPLE.M.name}” i wybierz dni, a tutaj pojawią się produkty z wagą.</p>`;
+    return;
+  }
+  if (!cur.length) {
+    listEl.innerHTML = `<p class="empty">${L === 2
+      ? (hasDays ? "Na tej liście nic jeszcze nie ma. Na liście 1 kliknij strzałkę przy dniu produktu, żeby przenieść go tutaj." : "Żeby rozdzielić zakupy na dwie listy, przypisz posiłkom dni tygodnia.")
+      : "Wszystkie produkty są na liście 2."}</p>`;
+    return;
+  }
+  let html = filtering && !cur.some(v => v.hit) ? `<p class="empty">Na tej liście nie ma produktów na ${filterLabel()}. Zmień dni w filtrze albo otwórz drugą listę.</p>` : "";
+  for (const [c, label] of CATS) {
+    const arr = cur.filter(v => v.it.cat === c).sort((a, b) => a.it.p.localeCompare(b.it.p, "pl"));
+    if (!arr.length) continue;
+    html += `<div class="grp${filtering && !arr.some(v => v.hit) ? " nohit" : ""}"><h3>${label}</h3><ul>${arr.map(v => itemHTML(v, L, hasDays, filtering)).join("")}</ul></div>`;
+  }
+  listEl.innerHTML = html;
+  updateSectionCounts();
+}
+/* kopiowanie: otwarta lista; przy włączonym filtrze tylko produkty na wybrane dni, w ilości na te dni */
+function listText(){
+  const r = computeList();
+  const L = state.list, filtering = r.filtering;
+  const cur = shown(r.views[L]).filter(v => !filtering || v.hit);
+  const fset = new Set(state.dayFilter.map(String));
+  let out = `Lista zakupów: ${tripLong(L)}${filtering ? `, produkty na: ${filterLabel()}` : ""}\n`;
+  for (const [c, label] of CATS) {
+    const arr = cur.filter(v => v.it.cat === c && !state.checked[L + "|" + v.it.p]).sort((a, b) => a.it.p.localeCompare(b.it.p, "pl"));
+    if (!arr.length) continue;
+    out += `\n${label}\n` + arr.map(v => {
+      const chunks = filtering ? v.chunks.filter(([k]) => fset.has(k)) : v.chunks;
+      const amt = filtering ? v.part : v.all;
+      const parts = r.hasDays ? ` (${chunks.map(([k, ch]) => `${keyLabel(k)} ${qtyOf(v.it.p, ch.g, ch.pcs)}`).join(", ")})` : "";
+      return `- ${v.it.p}: ${qtyOf(v.it.p, amt.g, amt.pcs)}${parts}`;
+    }).join("\n") + "\n";
+  }
+  const groups = planGroups(r.picks);
+  if (groups.length && groups[0].label) {
+    out += "\nPlan tygodnia\n" + groups.map(g => `${g.full}: ${g.list.map(x => `${x.d.n} (${x.who === "B" ? "obydwoje" : PEOPLE[x.who].name})`).join(", ")}`).join("\n");
+  } else {
+    for (const p of ["S","M"]) { const l = mealsLine(r.picks, p); if (l) out += `\nPosiłki ${PEOPLE[p].gen}: ${l}`; }
+  }
+  return out;
+}
+function copyText(text){
+  if (window.AndroidApp) return Promise.resolve(!!window.AndroidApp.copy(text));
+  const fallback = () => {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    ta.remove();
+    return ok;
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).then(() => true).catch(() => fallback());
+  }
+  return Promise.resolve(fallback());
+}
+function moveChunk(prod, k){
+  const key = prod + "|" + k;
+  if (state.trip[key] === 2) delete state.trip[key]; else state.trip[key] = 2;
+  save(); renderList();
+}
+function bulkMove(){
+  const t = state.tripDay[2];
+  if (t == null) return;
+  for (const it of computeList().items) for (const k of it.byDay.keys()) if (k !== "x" && +k >= t) state.trip[it.p + "|" + k] = 2;
+  save(); renderList();
+}
+
+/* Czyszczenie działa od razu, bez okna potwierdzenia (przeglądarka może je blokować).
+   Przez chwilę można je cofnąć. */
+let undoSnap = null, undoTimer = null;
+function hideUndo(){ $("#undo").hidden = true; undoSnap = null; clearTimeout(undoTimer); }
+function clearAll(){
+  const ids = Object.keys(state.sel);
+  if (!ids.length) return;
+  undoSnap = JSON.stringify({ sel:state.sel, days:state.days, checked:state.checked, trip:state.trip });
+  state.sel = {}; state.days = {}; state.checked = {}; state.trip = {}; openSrc.clear();
+  ids.forEach(updateRow);
+  save(); renderList(); applyFilter();
+  $("#undoMsg").textContent = `Wyczyszczono ${ids.length} ${plural(ids.length,"posiłek","posiłki","posiłków")}.`;
+  $("#undo").hidden = false;
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(hideUndo, 10000);
+}
+function undoClear(){
+  if (!undoSnap) return;
+  const s = JSON.parse(undoSnap);
+  state.sel = s.sel; state.days = s.days; state.checked = s.checked; state.trip = s.trip;
+  Object.keys(state.sel).forEach(updateRow);
+  save(); renderList(); applyFilter();
+  hideUndo();
+}
+
+/* ---------- zdarzenia ---------- */
+const reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+document.addEventListener("click", e => {
+  const df = $("#dayFilter");
+  if (df.open && !df.contains(e.target)) df.open = false;
+  const b = e.target.closest("[data-act]");
+  if (!b || b.disabled) return;
+  const act = b.dataset.act, id = b.dataset.id;
+  switch (act) {
+    case "pick": setPick(id, b.dataset.who); break;
+    case "day": toggleDay(id, +b.dataset.day); break;
+    case "clearOne": clearOne(id); break;
+    case "toggle": {
+      const d = document.getElementById("d" + id);
+      const open = b.getAttribute("aria-expanded") === "true";
+      if (!open && !d.innerHTML) d.innerHTML = detailHTML(BYID[id]);
+      d.hidden = open;
+      b.setAttribute("aria-expanded", String(!open));
+      break;
+    }
+    case "type": state.type = b.dataset.type; syncControls(); applyFilter(); if (state.type !== "all") { setSection(state.type, true); save(); } break;
+    case "sec": setSection(b.dataset.type, !!state.collapsed[b.dataset.type]); save(); break;
+    case "list": state.list = +b.dataset.list; save(); renderList(); break;
+    case "move": moveChunk(b.dataset.p, b.dataset.k); break;
+    case "bulk": bulkMove(); break;
+    case "fclear": state.dayFilter = []; save(); renderList(); break;
+    case "why": {
+      const li = b.closest(".it"), ck = li.dataset.ck, ul = li.querySelector(".src");
+      const open = ul.hidden;
+      ul.hidden = !open;
+      b.setAttribute("aria-expanded", String(open));
+      if (open) openSrc.add(ck); else openSrc.delete(ck);
+      break;
+    }
+    case "goto": {
+      const el = rowEl[id];
+      if (el.hidden) { state.type = "all"; state.q = ""; state.onlySel = false; state.who = "all"; syncControls(); applyFilter(); }
+      if (state.collapsed[BYID[id].c]) { setSection(BYID[id].c, true); save(); }
+      el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+      break;
+    }
+    case "copy": {
+      copyText(listText()).then(ok => {
+        b.textContent = ok ? "Skopiowano" : "Nie udało się skopiować";
+        setTimeout(() => { b.textContent = "Kopiuj listę"; }, 1800);
+      });
+      break;
+    }
+    case "print": window.print(); break;
+    case "share": {
+      const text = listText();
+      if (window.AndroidApp) window.AndroidApp.share("Lista zakupów", text);
+      else if (navigator.share) navigator.share({ title:"Lista zakupów", text }).catch(() => {});
+      break;
+    }
+    case "clear": clearAll(); break;
+    case "undo": undoClear(); break;
+  }
+});
+document.addEventListener("keydown", e => {
+  const df = $("#dayFilter");
+  if (e.key === "Escape" && df.open) { df.open = false; df.querySelector("summary").focus(); }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.matches('.it input[type="checkbox"]')) {
+    const ck = t.dataset.ck;
+    if (t.checked) state.checked[ck] = true; else delete state.checked[ck];
+    t.closest(".it").classList.toggle("done", t.checked);
+    save();
+    renderSummary(computeList());
+  } else if (t.matches("input[data-fday]")) {
+    const i = +t.dataset.fday, fs = new Set(state.dayFilter);
+    if (t.checked) fs.add(i); else fs.delete(i);
+    state.dayFilter = [...fs].sort((a, b) => a - b);
+    save(); renderList();
+  } else if (t.id === "onlySel") {
+    state.onlySel = t.checked; applyFilter(); if (state.onlySel) expandVisible();
+  } else if (t.id === "spices") {
+    state.spices = t.checked; save(); renderList();
+  } else if (t.id === "whoFilter") {
+    state.who = t.value; applyFilter();
+  } else if (t.id === "tripDay") {
+    if (t.value === "") delete state.tripDay[state.list]; else state.tripDay[state.list] = +t.value;
+    save(); renderList();
+  }
+});
+$("#q").addEventListener("input", e => { state.q = e.target.value; applyFilter(); if (state.q.trim()) expandVisible(); });
+
+$("#whoFilter").innerHTML = `<option value="all">Wszystkie przepisy</option><option value="S">Przepisy ${PEOPLE.S.gen}</option><option value="M">Przepisy ${PEOPLE.M.gen}</option>`;
+$("#dayMenu").innerHTML = DAYS_FULL.map((x, i) => `<label><input type="checkbox" data-fday="${i}"> ${x} <span class="n"></span></label>`).join("")
+  + `<button type="button" class="linkbtn" data-act="fclear">Wyczyść filtr</button>`;
+buildMeals();
+syncControls();
+applyFilter();
+renderList();
+</script>
+<script>
+/* =====================================================================
+   DODAWANIE PRZEPISÓW Z ZAŁĄCZNIKA (zdjęcie, PDF, tekst)
+   Odczyt robi Claude przez API Anthropic. Klucz API zapisuje się tylko
+   w tej przeglądarce. Każdy odczytany przepis trzeba sprawdzić i zapisać.
+   ===================================================================== */
+const API_STORE = "jadlospis-api-v1";
+const DEFAULT_MODEL = "claude-sonnet-5-5";
+const API_URL = "https://api.anthropic.com/v1/messages";
+function apiCfg(){ try { return JSON.parse(localStorage.getItem(API_STORE) || "{}") || {}; } catch (e) { return {}; } }
+function saveApiCfg(c){ try { localStorage.setItem(API_STORE, JSON.stringify(c)); return true; } catch (e) { return false; } }
+
+const dlg = $("#addDlg");
+let pending = [];   // pliki czekające na odczyt
+let cards = [];     // odczytane przepisy do sprawdzenia
+let cardSeq = 0;
+
+const toNum = v => {
+  if (v == null || v === "") return null;
+  const x = typeof v === "string" ? parseFloat(v.replace(",", ".")) : v;
+  return Number.isFinite(x) ? x : null;
+};
+const nextNumber = () => Math.max(67, ...DISHES.map(d => d.n), ...CUSTOM.recipes.map(r => r.n)) + 1;
+const findProduct = name => {
+  if (!name) return "";
+  const t = String(name).trim();
+  if (CATALOG[t]) return t;
+  const n = norm(t);
+  return Object.keys(CATALOG).find(p => norm(p) === n) || t;
+};
+function status(msg, isErr){
+  const el = $("#aiStatus");
+  el.textContent = msg || "";
+  el.classList.toggle("err", !!isErr);
+}
+
+/* ---------- pliki ---------- */
+function kindOf(f){
+  if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) return "pdf";
+  if (f.type.startsWith("image/")) return "image";
+  if (f.type.startsWith("text/") || /\.(txt|md|csv)$/i.test(f.name)) return "text";
+  return null;
+}
+function addFiles(list){
+  const skipped = [];
+  for (const f of list) {
+    const kind = kindOf(f);
+    if (kind) pending.push({ file:f, kind }); else skipped.push(f.name);
+  }
+  renderFiles();
+  status(skipped.length ? `Pominięto: ${skipped.join(", ")}. Obsługiwane są zdjęcia, PDF i pliki tekstowe.` : "", !!skipped.length);
+}
+function renderFiles(){
+  const kinds = { image:"zdjęcie", pdf:"PDF", text:"tekst" };
+  $("#fileList").innerHTML = pending.map((p, i) =>
+    `<li><span>${esc(p.file.name)} <span class="note">${kinds[p.kind]}, ${Math.max(1, Math.round(p.file.size / 1024))} kB</span></span><button type="button" class="rm" data-a="rmfile" data-i="${i}" aria-label="Usuń ${esc(p.file.name)}">×</button></li>`
+  ).join("");
+}
+async function fileToBase64(file){
+  const b = new Uint8Array(await file.arrayBuffer());
+  let s = "";
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+/* zdjęcie zmniejszone do 2000 px i zapisane jako JPG, żeby zmieściło się w limicie API */
+async function imageBlock(file){
+  let bmp;
+  try { bmp = await createImageBitmap(file); }
+  catch (e) { throw new Error(`Nie da się otworzyć zdjęcia ${file.name}. Zapisz je jako JPG albo PNG.`); }
+  const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(bmp.width * scale); cv.height = Math.round(bmp.height * scale);
+  cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+  return { type:"image", source:{ type:"base64", media_type:"image/jpeg", data:cv.toDataURL("image/jpeg", 0.85).split(",")[1] } };
+}
+async function pdfPageCount(file){
+  const t = new TextDecoder("latin1").decode(await file.arrayBuffer());
+  return (t.match(/\/Type\s*\/Page(?!s)/g) || []).length;
+}
+
+/* ---------- Claude ---------- */
+function systemPrompt(){
+  const catalog = Object.entries(CATALOG).filter(([, c]) => c !== "skip").map(([p, c]) => `${p} [${c}]`).join("; ");
+  const existing = DISHES.map(d => `${d.n}. [${d.c}] ${d.t}`).join("\n");
+  return `Przepisujesz jadłospisy od dietetyka do bazy danych aplikacji z listą zakupów. Z załącznika wyciągnij wszystkie posiłki (przepisy).
+
+Zwróć wyłącznie JSON, bez komentarzy i bez bloków kodu, w formacie:
+{"recipes":[{"type":"S","title":"...","kcal":0,"b":0,"t":0,"wo":0,"prep":null,"servings":1,"match":null,"recipe":"...","ingredients":[{"name":"...","product":"...","category":"veg","g":0,"measure":"...","eggs":null}]}]}
+
+Pola:
+- type: "S" śniadanie, "D" II śniadanie, "O" obiad, "K" kolacja (z nagłówka posiłku albo sekcji).
+- title: nazwa posiłku bez końcowego podkreślnika.
+- kcal, b, t, wo: liczby z linii "E: … kcal B: … T: … WO: …" (białko, tłuszcze, węglowodany w gramach).
+- prep: czas przygotowania w minutach albo null. servings: liczba z "Porcji: N", inaczej 1.
+- match: numer posiłku z listy ISTNIEJĄCE, jeśli to ten sam posiłek (ta sama lub prawie ta sama nazwa i te same składniki, nawet w innej gramaturze), inaczej null.
+- recipe: opis przygotowania, przepisany wiernie.
+- ingredients: każdy składnik osobno. name: nazwa z przepisu. product: nazwa produktu z listy KATALOG, jeśli to ten sam produkt (dokładnie ta pisownia), inaczej krótka, sklepowa nazwa nowego produktu. category: dział z KATALOG dla produktów z katalogu, dla nowych jeden z: veg (warzywa i owoce), bread (pieczywo), meat (mięso), cold (wędliny), dairy (nabiał i jajka), frozen (mrożonki), jar (słoiki, puszki, gotowe), dry (kasze, makarony, ziarna, orzechy), oil (oleje, sosy, octy), spice (przyprawy), home (do ugotowania w domu). g: gramy jako liczba. measure: miara domowa, np. "2 średnie sztuki". eggs: tylko dla białka lub żółtka jaja, liczba jajek; wtedy product to "Jajka".
+
+Uwagi:
+- W tych jadłospisach kolumna z gramaturą jest przesunięta o pół wiersza względem nazw składników. Przypisuj ilości po kolei: pierwsza ilość do pierwszego składnika, druga do drugiego itd. Liczba ilości jest równa liczbie składników.
+- Jajo, jajko i jaja to produkt "Jajka". Wodę pomiń.
+- Odręczne numery przy nagłówkach ignoruj.
+- Niczego nie zgaduj. Jeśli wartości nie da się odczytać, wpisz null.
+
+KATALOG (produkt [dział]):
+${catalog}
+
+ISTNIEJĄCE (numer [rodzaj] nazwa):
+${existing}`;
+}
+async function callClaude(content){
+  const cfg = apiCfg(), key = (cfg.key || "").trim();
+  const headers = { "content-type":"application/json" };
+  const body = { system:systemPrompt(), messages:[{ role:"user", content }] };
+  if (key) {
+    Object.assign(headers, { "x-api-key":key, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true" });
+    body.model = (cfg.model || DEFAULT_MODEL).trim();
+    body.max_tokens = 8000;
+  } else {
+    /* bez klucza działa tylko w podglądzie w czacie Claude */
+    body.model = "claude-sonnet-4-6";
+    body.max_tokens = 1000;
+  }
+  const fail = (msg, fatal) => { const e = new Error(msg); e.fatal = fatal; return e; };
+  let res;
+  try { res = await (window.AndroidApp ? nativeFetch : fetch)(API_URL, { method:"POST", headers, body:JSON.stringify(body) }); }
+  catch (e) { throw fail(key ? "Brak połączenia z API Anthropic. Sprawdź internet." : "Brak klucza API. Wpisz go w „Ustawieniach odczytu” poniżej.", true); }
+  if (!res.ok) {
+    let msg = "";
+    try { const j = await res.json(); msg = (j.error && j.error.message) || ""; } catch (e) {}
+    if (res.status === 401 || res.status === 403) throw fail(key ? "Klucz API został odrzucony. Sprawdź go w „Ustawieniach odczytu”." : "Brak klucza API. Wpisz go w „Ustawieniach odczytu” poniżej.", true);
+    if (res.status === 404 || /model/i.test(msg)) throw fail(`Model „${body.model}” nie jest dostępny. Zmień nazwę modelu w „Ustawieniach odczytu”.`, true);
+    if (res.status === 429 || res.status === 529) throw fail("API jest teraz przeciążone albo przekroczono limit. Spróbuj za chwilę.", true);
+    throw fail(`Błąd API (${res.status}). ${msg}`, false);
+  }
+  const data = await res.json();
+  return { text:(data.content || []).filter(b => b.type === "text").map(b => b.text).join(""), cut:data.stop_reason === "max_tokens" };
+}
+function parseRecipes(res){
+  const t = res.text.replace(/```json|```/g, "").trim();
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  const cutMsg = "Odpowiedź została ucięta. Wrzuć mniej stron naraz.";
+  if (a < 0 || b < a) throw new Error(res.cut ? cutMsg : "Nie udało się odczytać odpowiedzi.");
+  let j;
+  try { j = JSON.parse(t.slice(a, b + 1)); }
+  catch (e) { throw new Error(res.cut ? cutMsg : "Odpowiedź nie jest poprawnym JSON-em."); }
+  return Array.isArray(j.recipes) ? j.recipes : [];
+}
+function toCard(r, person, source){
+  const c = TYPES[r.type] ? r.type : "S";
+  const ing = (r.ingredients || []).map(x => {
+    const prod = findProduct(x.product || x.name);
+    const cat = CATALOG[prod] || (CATS.some(([k]) => k === x.category) ? x.category : "other");
+    let meas = x.measure || "";
+    if (prod === "Jajka" && toNum(x.eggs) && !/białk|żółt/i.test(meas)) meas = `${num(toNum(x.eggs))} ${/żółt/i.test(x.name || "") ? "żółtka" : "białka"}`;
+    return { prod, g:toNum(x.g) || 0, meas, cat };
+  }).filter(x => x.prod && norm(x.prod) !== "woda");
+  let target = "new";
+  const m = toNum(r.match);
+  if (m && BYID[m]) target = String(m);
+  else { const t = norm(r.title || ""); const hit = DISHES.find(d => norm(d.t) === t); if (hit) target = String(hit.n); }
+  return { id:++cardSeq, person, c, t:String(r.title || "").replace(/_+\s*$/, "").trim(), e:toNum(r.kcal), b:toNum(r.b), f:toNum(r.t), w:toNum(r.wo), p:toNum(r.prep), s:Math.max(1, Math.round(toNum(r.servings) || 1)), i:ing, r:r.recipe || "", target, source };
+}
+async function readAll(){
+  const text = $("#srcText").value.trim();
+  if (!pending.length && !text) { status("Wrzuć plik albo wklej tekst przepisu.", true); return; }
+  const person = document.querySelector('input[name="srcWho"]:checked').value;
+  const jobs = [];
+  for (const p of pending) {
+    if (p.kind === "image") jobs.push({ label:p.file.name, make:async () => [await imageBlock(p.file), { type:"text", text:"Odczytaj wszystkie przepisy z tego zdjęcia." }] });
+    else if (p.kind === "text") jobs.push({ label:p.file.name, make:async () => [{ type:"text", text:"Odczytaj wszystkie przepisy z tego tekstu:\n\n" + await p.file.text() }] });
+    else {
+      const pages = await pdfPageCount(p.file);
+      const doc = { type:"document", source:{ type:"base64", media_type:"application/pdf", data:await fileToBase64(p.file) } };
+      if (pages > 4) for (let a = 1; a <= pages; a += 4) {
+        const b = Math.min(pages, a + 3);
+        jobs.push({ label:`${p.file.name}, strony ${a}–${b}`, make:async () => [doc, { type:"text", text:`Odczytaj przepisy tylko ze stron ${a}–${b} tego PDF-a. Jeśli na tych stronach nie ma przepisów, zwróć {"recipes":[]}.` }] });
+      }
+      else jobs.push({ label:p.file.name, make:async () => [doc, { type:"text", text:"Odczytaj wszystkie przepisy z tego PDF-a." }] });
+    }
+  }
+  if (text) jobs.push({ label:"wklejony tekst", make:async () => [{ type:"text", text:"Odczytaj wszystkie przepisy z tego tekstu:\n\n" + text }] });
+
+  const btn = $("#readBtn");
+  btn.disabled = true; btn.textContent = "Odczytuję…";
+  const found = [], errors = [];
+  for (let i = 0; i < jobs.length; i++) {
+    status(`Odczytuję: ${jobs[i].label} (${i + 1} z ${jobs.length}). To może potrwać kilkanaście sekund.`);
+    try {
+      const recs = parseRecipes(await callClaude(await jobs[i].make()));
+      found.push(...recs.map(r => toCard(r, person, jobs[i].label)));
+    } catch (e) {
+      errors.push(`${jobs[i].label}: ${e.message}`);
+      if (e.fatal) { if (/klucz|Model/i.test(e.message)) $("#apiBox").open = true; break; }
+    }
+  }
+  btn.disabled = false; btn.textContent = "Odczytaj przepisy";
+  if (found.length) { pending = []; renderFiles(); $("#srcText").value = ""; }
+  cards.push(...found);
+  renderCards();
+  const ok = found.length ? `Odczytano ${found.length} ${plural(found.length,"przepis","przepisy","przepisów")}. Sprawdź je poniżej i zapisz.` : (errors.length ? "" : "Nie znaleziono żadnych przepisów.");
+  status([ok, ...errors].filter(Boolean).join(" "), !!errors.length && !found.length);
+  if (found.length) $("#review").scrollIntoView({ behavior:"smooth", block:"start" });
+}
+
+/* ---------- sprawdzanie i zapis ---------- */
+const typeOptions = sel => Object.entries(TYPES).map(([k, l]) => `<option value="${k}"${k === sel ? " selected" : ""}>${l}</option>`).join("");
+const catOptions = sel => CATS.map(([k, l]) => `<option value="${k}"${k === sel ? " selected" : ""}>${l}</option>`).join("");
+function targetOptions(card){
+  return `<option value="new"${card.target === "new" ? " selected" : ""}>Nowy posiłek</option>`
+    + DISHES.map(d => `<option value="${d.n}"${String(d.n) === card.target ? " selected" : ""}>${d.n}. ${esc(d.t)}</option>`).join("");
+}
+function targetHint(target, person){
+  if (target === "new") return "Dostanie kolejny wolny numer.";
+  const d = BYID[target];
+  if (!d) return "";
+  return d[person]
+    ? `Posiłek ${d.n} ma już wersję ${PEOPLE[person].gen}. Zostanie zastąpiona tą.`
+    : `Do posiłku ${d.n} zostanie dodana wersja ${PEOPLE[person].gen}.`;
+}
+function ingRow(x){
+  const known = !!CATALOG[x.prod];
+  return `<tr>
+    <td><input class="in-prod" list="prodList" value="${esc(x.prod)}" aria-label="Produkt"></td>
+    <td><input class="in-g" inputmode="decimal" value="${x.g ? num(x.g) : ""}" aria-label="Gramy"></td>
+    <td><input class="in-meas" value="${esc(x.meas)}" aria-label="Miara domowa"></td>
+    <td><select class="in-cat" aria-label="Dział sklepu"${known ? " disabled" : ""}>${catOptions(known ? CATALOG[x.prod] : x.cat)}</select></td>
+    <td><button type="button" class="rm" data-a="rmrow" aria-label="Usuń składnik">×</button></td>
+  </tr>`;
+}
+function cardHTML(card){
+  const v = k => card[k] == null ? "" : esc(num(card[k]));
+  const personOpt = p => `<option value="${p}"${card.person === p ? " selected" : ""}>${PEOPLE[p].name}</option>`;
+  return `<article class="rc" data-card="${card.id}">
+    <div class="rc-top"><select data-f="c" aria-label="Rodzaj posiłku">${typeOptions(card.c)}</select><input data-f="t" class="rc-title" value="${esc(card.t)}" placeholder="Nazwa posiłku" aria-label="Nazwa posiłku"></div>
+    <div class="rc-meta">
+      <label>Czyj <select data-f="person">${personOpt("S")}${personOpt("M")}</select></label>
+      <label>kcal <input data-f="e" inputmode="decimal" value="${v("e")}"></label>
+      <label>B <input data-f="b" inputmode="decimal" value="${v("b")}"></label>
+      <label>T <input data-f="f" inputmode="decimal" value="${v("f")}"></label>
+      <label>WO <input data-f="w" inputmode="decimal" value="${v("w")}"></label>
+      <label>Porcje <input data-f="s" inputmode="numeric" value="${v("s")}"></label>
+      <label>Czas, min <input data-f="p" inputmode="numeric" value="${v("p")}"></label>
+    </div>
+    <label class="rc-target">Zapisz jako <select data-f="target">${targetOptions(card)}</select></label>
+    <p class="note rc-hint">${targetHint(card.target, card.person)}</p>
+    <div class="rc-scroll"><table class="rc-ing"><thead><tr><th>Produkt</th><th>g</th><th>Miara</th><th>Dział sklepu</th><th><span class="sr">Usuń</span></th></tr></thead><tbody>${card.i.map(ingRow).join("")}</tbody></table></div>
+    <button type="button" class="linkbtn" data-a="addrow">Dodaj składnik</button>
+    <label class="rc-rec">Przygotowanie <textarea data-f="r" rows="3">${esc(card.r)}</textarea></label>
+    <p class="rc-err" role="alert"></p>
+    <div class="rc-actions"><button type="button" class="btn primary" data-a="save">Zapisz przepis</button><button type="button" class="btn" data-a="drop">Odrzuć</button>${card.source ? `<span class="note">Źródło: ${esc(card.source)}</span>` : ""}</div>
+  </article>`;
+}
+function renderCards(){
+  $("#review").hidden = !cards.length;
+  $("#reviewCount").textContent = cards.length;
+  $("#cards").innerHTML = cards.map(cardHTML).join("");
+  $("#saveAll").hidden = cards.length < 2;
+}
+function readCard(el){
+  const f = k => el.querySelector(`[data-f="${k}"]`).value;
+  return {
+    person:f("person"), target:f("target"), c:f("c"), t:f("t").trim(),
+    e:toNum(f("e")), b:toNum(f("b")), f:toNum(f("f")), w:toNum(f("w")), s:toNum(f("s")), p:toNum(f("p")), r:f("r").trim(),
+    i:[...el.querySelectorAll("tbody tr")].map(tr => ({
+      prod:tr.querySelector(".in-prod").value.trim(), g:toNum(tr.querySelector(".in-g").value),
+      meas:tr.querySelector(".in-meas").value.trim(), cat:tr.querySelector(".in-cat").value
+    })).filter(x => x.prod)
+  };
+}
+function saveCard(el, quiet){
+  const err = el.querySelector(".rc-err");
+  const x = readCard(el);
+  const problem = x.target === "new" && !x.t ? "Wpisz nazwę posiłku."
+    : !x.i.length ? "Dodaj przynajmniej jeden składnik."
+    : (x.i.find(z => !(z.g > 0)) ? `Podaj gramy dla: ${x.i.find(z => !(z.g > 0)).prod}.` : "");
+  if (problem) { err.textContent = problem; return false; }
+  const n = x.target === "new" ? nextNumber() : +x.target;
+  const dish = BYID[n];
+  for (const z of x.i) if (!CATALOG[z.prod]) CUSTOM.products[z.prod] = z.cat;
+  const rec = {
+    n, person:x.person, c:dish ? dish.c : x.c, t:dish ? dish.t : x.t,
+    e:x.e || 0, b:x.b || 0, f:x.f || 0, w:x.w || 0, s:Math.max(1, Math.round(x.s || 1)), p:x.p || null,
+    i:x.i.map(z => { const row = [z.prod, z.g, z.meas]; if (z.prod === "Jajka" && /białk|żółt/i.test(z.meas)) row.push(toNum(z.meas) || 1); return row; }),
+    r:x.r, added:new Date().toISOString().slice(0, 10)
+  };
+  CUSTOM.recipes = CUSTOM.recipes.filter(r => !(r.n === n && r.person === x.person));
+  CUSTOM.recipes.push(rec);
+  if (!saveCustom()) { err.textContent = "Nie udało się zapisać w przeglądarce."; return false; }
+  if (!quiet) syncCardsFromDom();
+  cards = cards.filter(c => c.id !== +el.dataset.card);
+  refreshApp();
+  if (!quiet) { renderCards(); renderMine(); status(`Zapisano: ${n}. ${rec.t} (${PEOPLE[x.person].name}).`); }
+  return rec;
+}
+function saveAll(){
+  let ok = 0, bad = 0;
+  for (const el of [...document.querySelectorAll("#cards .rc")]) { if (saveCard(el, true)) ok++; else bad++; }
+  /* karty z błędami zostają z komunikatem */
+  const kept = [...document.querySelectorAll("#cards .rc")].map(el => ({ id:+el.dataset.card, msg:el.querySelector(".rc-err").textContent }));
+  syncCardsFromDom();
+  renderCards(); renderMine();
+  kept.forEach(k => { const el = document.querySelector(`#cards .rc[data-card="${k.id}"]`); if (el) el.querySelector(".rc-err").textContent = k.msg; });
+  status(`Zapisano ${ok} ${plural(ok,"przepis","przepisy","przepisów")}.` + (bad ? ` ${bad} wymaga poprawek.` : ""), !!bad);
+}
+/* karty trzymają stan w polach formularza; przed przerysowaniem przepisuję go do pamięci */
+function syncCardsFromDom(){
+  for (const el of document.querySelectorAll("#cards .rc")) {
+    const card = cards.find(c => c.id === +el.dataset.card);
+    if (!card) continue;
+    const x = readCard(el);
+    Object.assign(card, { person:x.person, target:x.target, c:x.c, t:x.t, e:x.e, b:x.b, f:x.f, w:x.w, s:x.s, p:x.p, r:x.r, i:x.i.map(z => ({ prod:z.prod, g:z.g, meas:z.meas, cat:z.cat })) });
+  }
+}
+
+/* ---------- odświeżenie aplikacji po zmianie bazy ---------- */
+function refreshApp(){
+  buildCatalog(); buildDishes();
+  for (const k of Object.keys(state.sel)) {
+    const d = BYID[k], who = state.sel[k];
+    if (!d) { delete state.sel[k]; delete state.days[k]; continue; }
+    if (who === "B" && !(d.S && d.M)) state.sel[k] = d.S ? "S" : "M";
+    else if (who !== "B" && !d[who]) { delete state.sel[k]; delete state.days[k]; }
+  }
+  save(); buildMeals(); syncControls(); applyFilter(); renderList();
+  fillProdList();
+}
+function fillProdList(){
+  $("#prodList").innerHTML = Object.keys(CATALOG).filter(p => CATALOG[p] !== "skip").sort((a, b) => a.localeCompare(b, "pl")).map(p => `<option value="${esc(p)}">`).join("");
+}
+
+/* ---------- przepisy dodane przez użytkownika ---------- */
+function renderMine(){
+  const list = [...CUSTOM.recipes].sort((a, b) => a.n - b.n || a.person.localeCompare(b.person));
+  $("#mineCount").textContent = list.length;
+  $("#mineList").innerHTML = list.length
+    ? list.map(r => `<li><span><b>${r.n}.</b> ${esc(r.t)} <span class="who-tag ${r.person}">${PEOPLE[r.person].name}</span></span><button type="button" class="linkbtn" data-a="del" data-n="${r.n}" data-person="${r.person}">Usuń</button></li>`).join("")
+    : `<li class="note">Nie dodano jeszcze żadnych przepisów.</li>`;
+  $("#exportBtn").disabled = !list.length;
+}
+function deleteMine(b){
+  if (b.dataset.armed !== "1") {
+    b.dataset.armed = "1"; b.textContent = "Kliknij jeszcze raz, żeby usunąć";
+    setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "Usuń"; } }, 3500);
+    return;
+  }
+  const n = +b.dataset.n, person = b.dataset.person;
+  const builtin = MEALS_S.concat(MEALS_M).some(m => m.n === n);
+  CUSTOM.recipes = CUSTOM.recipes.filter(r => !(r.n === n && r.person === person));
+  saveCustom(); refreshApp(); renderMine();
+  status(builtin ? `Usunięto Twoją wersję posiłku ${n}. Wraca wersja z jadłospisu (jeśli była).` : `Usunięto posiłek ${n}.`);
+}
+function exportMine(){
+  const name = `przepisy-dodane-${new Date().toISOString().slice(0, 10)}.json`;
+  if (window.AndroidApp) { window.AndroidApp.saveFile(name, "application/json", JSON.stringify({ version:1, ...CUSTOM }, null, 2)); return; }
+  const blob = new Blob([JSON.stringify({ version:1, ...CUSTOM }, null, 2)], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `przepisy-dodane-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+async function importMine(file){
+  try {
+    const j = JSON.parse(await file.text());
+    const recs = (j.recipes || []).filter(r => Number.isInteger(r.n) && (r.person === "S" || r.person === "M") && Array.isArray(r.i) && r.t);
+    for (const r of recs) { CUSTOM.recipes = CUSTOM.recipes.filter(x => !(x.n === r.n && x.person === r.person)); CUSTOM.recipes.push(r); }
+    Object.assign(CUSTOM.products, j.products || {});
+    saveCustom(); refreshApp(); renderMine();
+    status(`Zaimportowano ${recs.length} ${plural(recs.length,"przepis","przepisy","przepisów")}.`);
+  } catch (e) { status("To nie jest plik z przepisami wyeksportowany z tej aplikacji.", true); }
+}
+
+/* ---------- okno ---------- */
+function openDlg(){
+  fillProdList(); renderMine(); renderFiles(); renderCards();
+  const cfg = apiCfg();
+  $("#apiKey").value = cfg.key || "";
+  $("#apiModel").value = cfg.model || DEFAULT_MODEL;
+  $("#apiBox").open = !cfg.key;
+  status("");
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-a]");
+  if (!b) return;
+  const a = b.dataset.a;
+  const card = b.closest(".rc");
+  switch (a) {
+    case "open": openDlg(); break;
+    case "close": dlg.close ? dlg.close() : dlg.removeAttribute("open"); break;
+    case "read": readAll(); break;
+    case "manual":
+      syncCardsFromDom();
+      cards.push({ id:++cardSeq, person:document.querySelector('input[name="srcWho"]:checked').value, c:"S", t:"", e:null, b:null, f:null, w:null, p:null, s:1, i:[{ prod:"", g:0, meas:"", cat:"veg" }, { prod:"", g:0, meas:"", cat:"veg" }], r:"", target:"new", source:"" });
+      renderCards();
+      document.querySelector("#cards .rc:last-child .rc-title").focus();
+      break;
+    case "rmfile": pending.splice(+b.dataset.i, 1); renderFiles(); break;
+    case "addrow": b.closest(".rc").querySelector("tbody").insertAdjacentHTML("beforeend", ingRow({ prod:"", g:0, meas:"", cat:"veg" })); break;
+    case "rmrow": b.closest("tr").remove(); break;
+    case "save": saveCard(card); break;
+    case "saveall": saveAll(); break;
+    case "drop": syncCardsFromDom(); cards = cards.filter(c => c.id !== +card.dataset.card); renderCards(); break;
+    case "del": deleteMine(b); break;
+    case "export": exportMine(); break;
+    case "apisave": {
+      const ok = saveApiCfg({ key:$("#apiKey").value.trim(), model:$("#apiModel").value.trim() || DEFAULT_MODEL });
+      status(ok ? "Zapisano ustawienia odczytu." : "Nie udało się zapisać ustawień w tej przeglądarce.", !ok);
+      break;
+    }
+    case "apiforget": saveApiCfg({ model:$("#apiModel").value.trim() || DEFAULT_MODEL }); $("#apiKey").value = ""; status("Usunięto klucz API z tej przeglądarki."); break;
+  }
+});
+dlg.addEventListener("change", e => {
+  const t = e.target, card = t.closest(".rc");
+  if (card && (t.dataset.f === "target" || t.dataset.f === "person")) {
+    card.querySelector(".rc-hint").textContent = targetHint(card.querySelector('[data-f="target"]').value, card.querySelector('[data-f="person"]').value);
+  }
+  if (t.id === "files") { addFiles([...t.files]); t.value = ""; }
+  if (t.id === "importFile" && t.files[0]) { importMine(t.files[0]); t.value = ""; }
+});
+dlg.addEventListener("input", e => {
+  const t = e.target;
+  if (t.classList.contains("in-prod")) {
+    const sel = t.closest("tr").querySelector(".in-cat"), p = findProduct(t.value);
+    if (CATALOG[p]) { sel.value = CATALOG[p]; sel.disabled = true; } else sel.disabled = false;
+  }
+});
+const drop = $("#drop");
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => addFiles([...e.dataTransfer.files]));
+dlg.addEventListener("paste", e => {
+  const files = [...(e.clipboardData ? e.clipboardData.files : [])];
+  if (files.length) { e.preventDefault(); addFiles(files); }
+});
+fillProdList();
+
+$("#whoS").textContent = PEOPLE.S.name; $("#whoM").textContent = PEOPLE.M.name;
+
+/* ---------- aplikacja na Androida ----------
+   W aplikacji strona działa w WebView, a funkcje telefonu (schowek, udostępnianie,
+   zapis pliku, drukowanie, zapytania do API) daje obiekt window.AndroidApp. */
+const nativePending = {};
+window.__nativeDone = (id, status, text) => {
+  const p = nativePending[id];
+  if (!p) return;
+  delete nativePending[id];
+  if (!status) p.reject(new Error(text || "Brak połączenia"));
+  else p.resolve({ ok:status >= 200 && status < 300, status, json:async () => JSON.parse(text), text:async () => text });
+};
+function nativeFetch(url, opts){
+  return new Promise((resolve, reject) => {
+    const id = "r" + Date.now() + Math.random().toString(36).slice(2);
+    nativePending[id] = { resolve, reject };
+    window.AndroidApp.post(id, url, JSON.stringify(opts.headers || {}), opts.body || "");
+  });
+}
+/* przycisk wstecz na telefonie: najpierw zamyka okno dodawania i filtr dni */
+window.appBack = () => {
+  if (dlg.open) { dlg.close(); return true; }
+  const df = $("#dayFilter");
+  if (df.open) { df.open = false; return true; }
+  return false;
+};
+if (window.AndroidApp) {
+  document.documentElement.classList.add("native");
+  window.print = () => window.AndroidApp.print("Lista zakupów");
+  $("#drop .drop-main").textContent = "Dotknij, żeby zrobić zdjęcie albo wybrać plik";
+  $("#drop .note").textContent = "Zdjęcia, PDF i pliki tekstowe.";
+}
+$("#shareBtn").hidden = !(window.AndroidApp || navigator.share);
+</script>
+<script>
+/* wersja na stronę: działanie bez internetu i trwałe przechowywanie danych */
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+</script>
+</body>
+</html>

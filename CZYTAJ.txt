@@ -1,0 +1,10 @@
+Jadłospis – wersja na stronę (iPad, iPhone, Android, komputer)
+
+Wrzuć WSZYSTKIE pliki z tego folderu na hosting stron (np. GitHub Pages albo Netlify),
+otwórz adres w Safari na iPadzie i dodaj do ekranu początkowego:
+Udostępnij → „Do ekranu początkowego”.
+
+Aplikacja działa wtedy jak zwykła apka, także bez internetu (poza odczytem przepisów).
+Zawsze otwieraj ją ikoną z ekranu początkowego – dane zapisują się osobno dla ikony i osobno dla Safari.
+
+Aktualizacja: podmień pliki na hostingu i w sw.js zmień numer w CACHE (np. jadlospis-v2).
